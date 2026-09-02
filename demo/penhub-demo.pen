@@ -1,0 +1,352 @@
+{
+  "version": "2.17",
+  "variables": {
+    "--bg": { "type": "color", "value": "#FFFFFF" },
+    "--surface": { "type": "color", "value": "#F9FAFB" },
+    "--border": { "type": "color", "value": "#D1D5DB" },
+    "--text-primary": { "type": "color", "value": "#111827" },
+    "--text-secondary": { "type": "color", "value": "#6B7280" },
+    "--accent": { "type": "color", "value": "#3B82F6" }
+  },
+  "children": [
+    {
+      "id": "login-screen",
+      "name": "Login Screen",
+      "type": "frame",
+      "x": 0,
+      "y": 0,
+      "layout": "vertical",
+      "width": 480,
+      "padding": [40, 40, 40, 40],
+      "gap": 24,
+      "fill": "$--bg",
+      "cornerRadius": 12,
+      "clip": true,
+      "children": [
+        {
+          "id": "logo-row",
+          "name": "Logo Row",
+          "type": "frame",
+          "layout": "horizontal",
+          "gap": 8,
+          "alignItems": "center",
+          "width": "fill_container",
+          "children": [
+            { "id": "logo-mark", "name": "Logo Mark", "type": "rectangle", "width": 28, "height": 28, "fill": "$--accent", "cornerRadius": 6 },
+            { "id": "brand", "name": "Brand", "type": "text", "content": "penhub", "fontFamily": "Inter", "fontSize": 18, "fontWeight": 600, "fill": "$--text-primary" }
+          ]
+        },
+        { "id": "login-title", "name": "Title", "type": "text", "content": "Sign in", "fontFamily": "Inter", "fontSize": 28, "fontWeight": 700, "fill": "$--text-primary" },
+        { "id": "login-subtitle", "name": "Subtitle", "type": "text", "content": "Review and comment on .pen design files in your PRs.", "textGrowth": "fixed-width", "width": "fill_container", "fontFamily": "Inter", "fontSize": 14, "fill": "$--text-secondary" },
+        {
+          "id": "email-field",
+          "name": "Email Field",
+          "type": "frame",
+          "layout": "vertical",
+          "gap": 8,
+          "width": "fill_container",
+          "children": [
+            { "id": "email-label", "name": "Email Label", "type": "text", "content": "Email address", "fontFamily": "Inter", "fontSize": 13, "fontWeight": 500, "fill": "$--text-primary" },
+            {
+              "id": "email-input",
+              "name": "Email Input",
+              "type": "frame",
+              "layout": "horizontal",
+              "alignItems": "center",
+              "width": "fill_container",
+              "height": 44,
+              "padding": [0, 12, 0, 12],
+              "fill": "$--surface",
+              "stroke": { "fill": "$--border", "thickness": 1 },
+              "cornerRadius": 8,
+              "children": [
+                { "id": "email-value", "name": "Email Value", "type": "text", "content": "you@example.com", "fontFamily": "Inter", "fontSize": 14, "fill": "$--text-secondary" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "password-field",
+          "name": "Password Field",
+          "type": "frame",
+          "layout": "vertical",
+          "gap": 8,
+          "width": "fill_container",
+          "children": [
+            { "id": "password-label", "name": "Password Label", "type": "text", "content": "Password", "fontFamily": "Inter", "fontSize": 13, "fontWeight": 500, "fill": "$--text-primary" },
+            {
+              "id": "password-input",
+              "name": "Password Input",
+              "type": "frame",
+              "layout": "horizontal",
+              "alignItems": "center",
+              "width": "fill_container",
+              "height": 44,
+              "padding": [0, 12, 0, 12],
+              "fill": "$--surface",
+              "stroke": { "fill": "$--border", "thickness": 1 },
+              "cornerRadius": 8,
+              "children": [
+                { "id": "password-value", "name": "Password Value", "type": "text", "content": "••••••••", "fontFamily": "Inter", "fontSize": 14, "fill": "$--text-primary" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sign-in-button",
+          "name": "Sign In Button",
+          "type": "frame",
+          "layout": "horizontal",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "width": "fill_container",
+          "height": 48,
+          "fill": "$--text-primary",
+          "cornerRadius": 8,
+          "children": [
+            { "id": "sign-in-label", "name": "Sign In Label", "type": "text", "content": "Sign in", "fontFamily": "Inter", "fontSize": 14, "fontWeight": 600, "fill": "#FFFFFF" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pr-review",
+      "name": "PR Review",
+      "type": "frame",
+      "x": 560,
+      "y": 0,
+      "layout": "vertical",
+      "width": 1200,
+      "height": 760,
+      "fill": "$--bg",
+      "clip": true,
+      "children": [
+        {
+          "id": "pr-header",
+          "name": "Header",
+          "type": "frame",
+          "layout": "horizontal",
+          "justifyContent": "space-between",
+          "alignItems": "center",
+          "padding": [12, 16, 12, 16],
+          "fill": "$--text-primary",
+          "width": "fill_container",
+          "children": [
+            { "id": "repo-name", "name": "Repo", "type": "text", "content": "tomoasleep/penhub", "fontFamily": "Inter", "fontSize": 14, "fontWeight": 600, "fill": "#FFFFFF" },
+            { "id": "pr-title", "name": "PR Title", "type": "text", "content": "#123 Add .pen viewer", "fontFamily": "Inter", "fontSize": 14, "fill": "#E5E7EB" }
+          ]
+        },
+        {
+          "id": "pr-body",
+          "name": "Body",
+          "type": "frame",
+          "layout": "horizontal",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "id": "file-list",
+              "name": "File List",
+              "type": "frame",
+              "layout": "vertical",
+              "width": 280,
+              "height": "fill_container",
+              "fill": "$--surface",
+              "stroke": { "fill": "$--border", "thickness": 1 },
+              "clip": true,
+              "children": [
+                {
+                  "id": "files-header",
+                  "name": "Files Header",
+                  "type": "frame",
+                  "layout": "horizontal",
+                  "padding": [12, 16, 12, 16],
+                  "width": "fill_container",
+                  "stroke": { "fill": "$--border", "thickness": { "top": 0, "right": 0, "bottom": 1, "left": 0 } },
+                  "children": [
+                    { "id": "files-title", "name": "Files Title", "type": "text", "content": "Files changed", "fontFamily": "Inter", "fontSize": 13, "fontWeight": 600, "fill": "$--text-primary" }
+                  ]
+                },
+                {
+                  "id": "file-row-login",
+                  "name": "File login.pen",
+                  "type": "frame",
+                  "layout": "horizontal",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "padding": [12, 16, 12, 16],
+                  "width": "fill_container",
+                  "fill": "#EFF6FF",
+                  "children": [
+                    { "id": "login-file-icon", "name": "File Icon", "type": "rectangle", "width": 14, "height": 16, "fill": "$--bg", "stroke": { "fill": "$--accent", "thickness": 1 }, "cornerRadius": 3 },
+                    { "id": "login-file-name", "name": "File Name", "type": "text", "content": "login.pen", "fontFamily": "Inter", "fontSize": 13, "fill": "$--text-primary" },
+                    { "id": "login-row-spacer", "name": "Badge Spacer", "type": "frame", "layout": "horizontal", "width": "fill_container", "height": 16 },
+                    {
+                      "id": "login-comment-badge",
+                      "name": "Comment Badge",
+                      "type": "frame",
+                      "layout": "horizontal",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "width": 20,
+                      "height": 20,
+                      "fill": "$--accent",
+                      "cornerRadius": 10,
+                      "children": [
+                        { "id": "login-badge-count", "name": "Badge Count", "type": "text", "content": "2", "fontFamily": "Inter", "fontSize": 11, "fontWeight": 600, "fill": "#FFFFFF" }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "file-row-dashboard",
+                  "name": "File dashboard.pen",
+                  "type": "frame",
+                  "layout": "horizontal",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "padding": [12, 16, 12, 16],
+                  "width": "fill_container",
+                  "fill": "$--surface",
+                  "children": [
+                    { "id": "dashboard-file-icon", "name": "File Icon", "type": "rectangle", "width": 14, "height": 16, "fill": "$--bg", "stroke": { "fill": "$--border", "thickness": 1 }, "cornerRadius": 3 },
+                    { "id": "dashboard-file-name", "name": "File Name", "type": "text", "content": "dashboard.pen", "fontFamily": "Inter", "fontSize": 13, "fill": "$--text-primary" },
+                    { "id": "dashboard-row-spacer", "name": "Badge Spacer", "type": "frame", "layout": "horizontal", "width": "fill_container", "height": 16 }
+                  ]
+                },
+                {
+                  "id": "file-row-settings",
+                  "name": "File settings.pen",
+                  "type": "frame",
+                  "layout": "horizontal",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "padding": [12, 16, 12, 16],
+                  "width": "fill_container",
+                  "fill": "$--surface",
+                  "children": [
+                    { "id": "settings-file-icon", "name": "File Icon", "type": "rectangle", "width": 14, "height": 16, "fill": "$--bg", "stroke": { "fill": "$--border", "thickness": 1 }, "cornerRadius": 3 },
+                    { "id": "settings-file-name", "name": "File Name", "type": "text", "content": "settings.pen", "fontFamily": "Inter", "fontSize": 13, "fill": "$--text-primary" },
+                    { "id": "settings-row-spacer", "name": "Badge Spacer", "type": "frame", "layout": "horizontal", "width": "fill_container", "height": 16 },
+                    {
+                      "id": "settings-comment-badge",
+                      "name": "Comment Badge",
+                      "type": "frame",
+                      "layout": "horizontal",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "width": 20,
+                      "height": 20,
+                      "fill": "$--accent",
+                      "cornerRadius": 10,
+                      "children": [
+                        { "id": "settings-badge-count", "name": "Badge Count", "type": "text", "content": "1", "fontFamily": "Inter", "fontSize": 11, "fontWeight": 600, "fill": "#FFFFFF" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "viewer",
+              "name": "Viewer",
+              "type": "frame",
+              "layout": "vertical",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#F3F4F6",
+              "clip": true,
+              "children": [
+                {
+                  "id": "toolbar",
+                  "name": "Toolbar",
+                  "type": "frame",
+                  "layout": "horizontal",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "padding": [10, 16, 10, 16],
+                  "fill": "$--bg",
+                  "stroke": { "fill": "$--border", "thickness": { "top": 0, "right": 0, "bottom": 1, "left": 0 } },
+                  "width": "fill_container",
+                  "children": [
+                    { "id": "back-button", "name": "Back Button", "type": "frame", "layout": "horizontal", "justifyContent": "center", "alignItems": "center", "width": 24, "height": 24, "cornerRadius": 6, "stroke": { "fill": "$--border", "thickness": 1 }, "children": [
+                      { "id": "back-chevron", "name": "Back Chevron", "type": "text", "content": "‹", "fontFamily": "Inter", "fontSize": 16, "fill": "$--text-secondary" }
+                    ] },
+                    { "id": "toolbar-file", "name": "Toolbar File", "type": "text", "content": "login.pen", "fontFamily": "Inter", "fontSize": 13, "fontWeight": 500, "fill": "$--text-primary" },
+                    { "id": "toolbar-spacer", "name": "Toolbar Spacer", "type": "frame", "layout": "horizontal", "width": "fill_container", "height": 16 },
+                    { "id": "zoom-label", "name": "Zoom Label", "type": "text", "content": "100%", "fontFamily": "Inter", "fontSize": 12, "fill": "$--text-secondary" }
+                  ]
+                },
+                {
+                  "id": "canvas",
+                  "name": "Canvas",
+                  "type": "frame",
+                  "layout": "none",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#F3F4F6",
+                  "clip": true,
+                  "children": [
+                    {
+                      "id": "rendered-login",
+                      "name": "Rendered Login",
+                      "type": "frame",
+                      "x": 80,
+                      "y": 60,
+                      "layout": "vertical",
+                      "padding": [32, 32, 32, 32],
+                      "gap": 16,
+                      "fill": "$--bg",
+                      "cornerRadius": 12,
+                      "stroke": { "fill": "$--border", "thickness": 1 },
+                      "width": 360,
+                      "children": [
+                        { "id": "card-title", "name": "Card Title", "type": "text", "content": "Welcome back", "fontFamily": "Inter", "fontSize": 20, "fontWeight": 700, "fill": "$--text-primary" },
+                        { "id": "card-input", "name": "Card Input", "type": "frame", "layout": "horizontal", "alignItems": "center", "width": "fill_container", "height": 40, "padding": [0, 12, 0, 12], "fill": "$--surface", "stroke": { "fill": "$--border", "thickness": 1 }, "cornerRadius": 8, "children": [
+                          { "id": "card-input-placeholder", "name": "Card Input Placeholder", "type": "text", "content": "Email address", "fontFamily": "Inter", "fontSize": 13, "fill": "$--text-secondary" }
+                        ] },
+                        {
+                          "id": "card-button",
+                          "name": "Card Button",
+                          "type": "frame",
+                          "layout": "horizontal",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "width": "fill_container",
+                          "height": 40,
+                          "fill": "$--accent",
+                          "cornerRadius": 8,
+                          "children": [
+                            { "id": "card-button-label", "name": "Card Button Label", "type": "text", "content": "Continue", "fontFamily": "Inter", "fontSize": 13, "fontWeight": 600, "fill": "#FFFFFF" }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "comment-pin",
+                      "name": "Comment Pin",
+                      "type": "frame",
+                      "x": 400,
+                      "y": 76,
+                      "layout": "horizontal",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "width": 28,
+                      "height": 28,
+                      "fill": "#F59E0B",
+                      "cornerRadius": 14,
+                      "stroke": { "fill": "#FFFFFF", "thickness": 2 },
+                      "children": [
+                        { "id": "pin-number", "name": "Pin Number", "type": "text", "content": "1", "fontFamily": "Inter", "fontSize": 12, "fontWeight": 700, "fill": "#FFFFFF" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -15,29 +15,29 @@ export function App() {
 
   useEffect(() => {
     fetch("/api/sources")
-      .then((r) => r.json())
-      .then(setSources);
+      .then((r) => (r.ok ? r.json() : []))
+      .then((body) => setSources(Array.isArray(body) ? body : []));
   }, []);
 
   useEffect(() => {
     if (!activeSource) return;
     fetch(`/api/sources/${activeSource.id}/files`)
-      .then((r) => r.json())
-      .then(setFiles);
+      .then((r) => (r.ok ? r.json() : []))
+      .then((body) => setFiles(Array.isArray(body) ? body : []));
   }, [activeSource]);
 
   useEffect(() => {
     if (!activeSource || !activeFile) return;
     fetch(`/api/sources/${activeSource.id}/files/${activeFile}`)
-      .then((r) => r.json())
-      .then((body) => setContent(body.content));
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => setContent(body?.content ?? null));
   }, [activeSource, activeFile]);
 
   useEffect(() => {
     if (!activeSource || !activeFile) return;
     fetch(`/api/sources/${activeSource.id}/comments?filePath=${encodeURIComponent(activeFile)}`)
-      .then((r) => r.json())
-      .then(setComments);
+      .then((r) => (r.ok ? r.json() : []))
+      .then((body) => setComments(Array.isArray(body) ? body : []));
   }, [activeSource, activeFile]);
 
   async function addComment(body: string) {

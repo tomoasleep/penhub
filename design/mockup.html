@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>penhub — 画面構成モックアップ</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-sub: #161b22;
+    --bg-hover: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-sub: #8b949e;
+    --accent: #58a6ff;
+    --accent-bg: #1f6feb;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --comment-bg: #1c2128;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--bg-sub);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo { font-weight: 700; font-size: 16px; color: var(--text); }
+  .logo span { color: var(--accent); }
+  .source-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: var(--text-sub);
+    font-size: 13px;
+  }
+  .source-select .chevron { color: var(--text-sub); }
+  .branch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: var(--text);
+    font-size: 13px;
+  }
+  .branch .icon { color: var(--accent); }
+  .spacer { flex: 1; }
+  .btn {
+    background: var(--accent-bg);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    height: calc(100vh - 49px);
+  }
+  /* ===== ファイルツリー ===== */
+  .filetree {
+    border-right: 1px solid var(--border);
+    background: var(--bg-sub);
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .tree-header {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-sub);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 16px;
+    cursor: pointer;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .tree-item:hover { background: var(--bg-hover); }
+  .tree-item.active { background: var(--accent-bg); color: #fff; }
+  .tree-item .icon { width: 16px; text-align: center; color: var(--text-sub); flex-shrink: 0; }
+  .tree-item.active .icon { color: #fff; }
+  .tree-item .name { overflow: hidden; text-overflow: ellipsis; }
+  .tree-item .pen-badge {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--purple);
+    border: 1px solid var(--purple);
+    border-radius: 4px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .tree-item .count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-sub);
+    background: var(--bg-hover);
+    border-radius: 10px;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+  .tree-item .count.has-comment { color: var(--yellow); background: rgba(210,153,34,0.15); }
+  .tree-item .count.has-comment::before { content: "💬 "; }
+  .tree-item.indent-1 { padding-left: 32px; }
+  .tree-item.indent-2 { padding-left: 48px; }
+  .tree-item.indent-3 { padding-left: 64px; }
+  .tree-item .folder-arrow { transition: transform 0.1s; }
+  .tree-item .folder-arrow.open { transform: rotate(90deg); }
+
+  /* ===== メイン (Viewer) ===== */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .file-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-sub);
+  }
+  .file-header .path { color: var(--text-sub); }
+  .file-header .path b { color: var(--text); font-weight: 600; }
+  .file-header .commit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-sub);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 8px;
+  }
+  .file-header .commit .sha { font-family: monospace; color: var(--accent); }
+  .canvas-area {
+    flex: 1;
+    background: #0a0c10;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .canvas {
+    width: 600px;
+    height: 400px;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  /* モックのデザイン要素 */
+  .mock-frame {
+    position: absolute;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .mock-frame .mock-title { font-size: 12px; font-weight: 600; color: #24292f; margin-bottom: 8px; }
+  .mock-btn {
+    display: inline-block;
+    background: #1f6feb;
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .mock-btn.secondary { background: #eaeef2; color: #24292f; }
+  .mock-input {
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #57606a;
+    background: #fff;
+  }
+  .mock-text { font-size: 12px; color: #57606a; }
+  .mock-heading { font-size: 16px; font-weight: 700; color: #24292f; }
+  /* 選択ハイライト */
+  .selection {
+    position: absolute;
+    border: 2px solid var(--accent);
+    border-radius: 2px;
+    pointer-events: none;
+    box-shadow: 0 0 0 1px rgba(88,166,255,0.3);
+  }
+  .selection .label {
+    position: absolute;
+    top: -22px;
+    left: -2px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-family: monospace;
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  /* コメントピン */
+  .pin {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: #1c2128;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    z-index: 5;
+  }
+  .pin:hover { transform: scale(1.15); }
+  .pin.resolved { background: var(--green); }
+  .zoom-controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    gap: 4px;
+    background: var(--bg-sub);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px;
+  }
+  .zoom-controls button {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .zoom-controls button:hover { background: var(--bg-hover); }
+  .zoom-controls .zoom-label { font-size: 12px; color: var(--text-sub); display: flex; align-items: center; padding: 0 6px; }
+  .page-tabs {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 4px;
+  }
+  .page-tab {
+    background: var(--bg-sub);
+    border: 1px solid var(--border);
+    color: var(--text-sub);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .page-tab.active { background: var(--accent-bg); color: #fff; border-color: var(--accent-bg); }
+
+  /* ===== コメントパネル ===== */
+  .comments {
+    border-left: 1px solid var(--border);
+    background: var(--bg-sub);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .comments-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .comments-header .count { color: var(--text-sub); font-weight: 400; font-size: 12px; }
+  .comments-list { flex: 1; overflow-y: auto; }
+  .comment {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .comment.selected { background: var(--bg-hover); border-left: 3px solid var(--accent); }
+  .comment .meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-bg);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .comment .author { font-weight: 600; font-size: 13px; }
+  .comment .time { color: var(--text-sub); font-size: 12px; }
+  .comment .node-tag {
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--purple);
+    background: rgba(188,140,255,0.12);
+    border: 1px solid rgba(188,140,255,0.3);
+    border-radius: 4px;
+    padding: 0 5px;
+    margin-left: auto;
+  }
+  .comment .body { font-size: 13px; color: var(--text); }
+  .comment .body .highlight { background: rgba(210,153,34,0.2); border-radius: 3px; padding: 0 2px; }
+  .comment .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+  .comment .actions a { color: var(--accent); text-decoration: none; cursor: pointer; }
+  .comment .actions a:hover { text-decoration: underline; }
+  .comment .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    border-radius: 10px;
+    padding: 1px 8px;
+  }
+  .comment .status.open { background: rgba(63,185,80,0.15); color: var(--green); }
+  .comment .status.resolved { background: rgba(139,148,158,0.15); color: var(--text-sub); }
+  .comment .github-link { color: var(--text-sub); font-size: 12px; }
+  .comment .github-link a { color: var(--accent); }
+  .comment-input {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .comment-input .node-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+  .comment-input .node-info .node-tag { margin-left: 0; }
+  .comment-input textarea {
+    width: 100%;
+    min-height: 80px;
+    background: var(--bg-sub);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .comment-input textarea:focus { outline: none; border-color: var(--accent); }
+  .comment-input .input-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .comment-input .hint { font-size: 11px; color: var(--text-sub); }
+  .comment-input .hint .sync { color: var(--green); }
+  .empty-state {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--text-sub);
+  }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+  .empty-state .title { font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .empty-state .desc { font-size: 12px; }
+
+  /* 注釈 */
+  .annotations {
+    padding: 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .annotations h3 { font-size: 13px; color: var(--text-sub); margin-bottom: 8px; }
+  .annotation {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-bottom: 6px;
+  }
+  .annotation .num {
+    background: var(--accent-bg);
+    color: #fff;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .annotation .num.green { background: var(--green); }
+  .annotation .num.yellow { background: var(--yellow); color: #1c2128; }
+  .annotation .num.red { background: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- ===== トップバー ===== -->
+<div class="topbar">
+  <div class="logo">pen<span>hub</span></div>
+  <div class="source-select">
+    <span>📁</span>
+    <span>ローカルフォルダ: ~/designs</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="branch">
+    <span class="icon">⎇</span>
+    <span>feature/login-screen</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn ghost">コメントを GitHub に同期</button>
+  <button class="btn">+ コメント</button>
+</div>
+
+<div class="layout">
+  <!-- ===== ファイルツリー ===== -->
+  <aside class="filetree">
+    <div class="tree-header">ファイル</div>
+    <div class="tree-item">
+      <span class="icon folder-arrow open">▾</span>
+      <span class="icon">📁</span>
+      <span class="name">src</span>
+    </div>
+    <div class="tree-item indent-1">
+      <span class="icon folder-arrow open">▾</span>
+      <span class="icon">📁</span>
+      <span class="name">screens</span>
+    </div>
+    <div class="tree-item indent-2 active">
+      <span class="icon">🖼️</span>
+      <span class="name">login.pen</span>
+      <span class="pen-badge">pen</span>
+      <span class="count has-comment">3</span>
+    </div>
+    <div class="tree-item indent-2">
+      <span class="icon">🖼️</span>
+      <span class="name">signup.pen</span>
+      <span class="pen-badge">pen</span>
+      <span class="count has-comment">1</span>
+    </div>
+    <div class="tree-item indent-2">
+      <span class="icon">🖼️</span>
+      <span class="name">forgot-password.pen</span>
+      <span class="pen-badge">pen</span>
+    </div>
+    <div class="tree-item indent-1">
+      <span class="icon folder-arrow">▸</span>
+      <span class="icon">📁</span>
+      <span class="name">components</span>
+    </div>
+    <div class="tree-item indent-1">
+      <span class="icon folder-arrow">▸</span>
+      <span class="icon">📁</span>
+      <span class="name">assets</span>
+    </div>
+    <div class="tree-item">
+      <span class="icon">📄</span>
+      <span class="name">README.md</span>
+    </div>
+    <div class="tree-item">
+      <span class="icon">📄</span>
+      <span class="name">package.json</span>
+    </div>
+  </aside>
+
+  <!-- ===== メイン (Viewer) ===== -->
+  <main class="main">
+    <div class="file-header">
+      <span class="path"><b>src/screens/login.pen</b></span>
+      <div class="commit">
+        <span>commit</span>
+        <span class="sha">a1b2c3d</span>
+        <span>· 2 日前</span>
+      </div>
+      <div class="spacer"></div>
+      <span style="font-size:12px;color:var(--text-sub)">3 コメント</span>
+    </div>
+
+    <div class="canvas-area">
+      <div class="page-tabs">
+        <div class="page-tab active">Page 1</div>
+        <div class="page-tab">Page 2</div>
+      </div>
+
+      <div class="canvas">
+        <!-- モックのデザイン (ログイン画面) -->
+        <div class="mock-frame" style="left:20px;top:20px;width:560px;height:360px;">
+          <div class="mock-heading" style="margin-bottom:16px;">ログイン</div>
+          <div class="mock-text" style="margin-bottom:8px;">メールアドレス</div>
+          <div class="mock-input" style="width:100%;margin-bottom:16px;">you@example.com</div>
+          <div class="mock-text" style="margin-bottom:8px;">パスワード</div>
+          <div class="mock-input" style="width:100%;margin-bottom:24px;">••••••••</div>
+          <div class="mock-btn" style="width:100%;text-align:center;">ログイン</div>
+          <div class="mock-text" style="margin-top:16px;text-align:center;">アカウントをお持ちでない方は <span style="color:#1f6feb;">新規登録</span></div>
+        </div>
+
+        <!-- 選択ハイライト (ログインボタン) -->
+        <div class="selection" style="left:32px;top:232px;width:536px;height:34px;">
+          <div class="label">0:5</div>
+        </div>
+
+        <!-- コメントピン -->
+        <div class="pin" style="left:300px;top:245px;">1</div>
+        <div class="pin" style="left:80px;top:120px;">2</div>
+        <div class="pin resolved" style="left:420px;top:60px;">3</div>
+      </div>
+
+      <div class="zoom-controls">
+        <button>−</button>
+        <span class="zoom-label">100%</span>
+        <button>＋</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== コメントパネル ===== -->
+  <aside class="comments">
+    <div class="comments-header">
+      <span>コメント</span>
+      <span class="count">3 件</span>
+    </div>
+
+    <div class="comments-list">
+      <div class="comment selected">
+        <div class="meta">
+          <div class="avatar">T</div>
+          <span class="author">tomoasleep</span>
+          <span class="time">2 時間前</span>
+          <span class="node-tag">0:5</span>
+        </div>
+        <div class="body">
+          ログインボタンのコントラスト比が <span class="highlight">4.5:1</span> を下回っています。アクセシビリティ的に問題があります。
+        </div>
+        <div class="actions">
+          <span class="status open">● 未解決</span>
+          <a>返信</a>
+          <a>解決</a>
+          <span class="github-link">GitHub で表示 ↗</span>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="meta">
+          <div class="avatar" style="background:#bc8cff;">K</div>
+          <span class="author">kentaro</span>
+          <span class="time">昨日</span>
+          <span class="node-tag">0:3</span>
+        </div>
+        <div class="body">
+          メールアドレスの入力欄、プレースホルダーが薄すぎて見づらいです。
+        </div>
+        <div class="actions">
+          <span class="status open">● 未解決</span>
+          <a>返信</a>
+          <a>解決</a>
+          <span class="github-link">GitHub で表示 ↗</span>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="meta">
+          <div class="avatar" style="background:#3fb950;">S</div>
+          <span class="author">suzuki</span>
+          <span class="time">3 日前</span>
+          <span class="node-tag">0:2</span>
+        </div>
+        <div class="body">
+          タイトルのフォントサイズ、モバイルだと大きすぎるかも。確認お願いします。
+        </div>
+        <div class="actions">
+          <span class="status resolved">✓ 解決済み</span>
+          <a>再開</a>
+          <span class="github-link">GitHub で表示 ↗</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- コメント入力 -->
+    <div class="comment-input">
+      <div class="node-info">
+        <span>コメント先:</span>
+        <span class="node-tag">0:5</span>
+        <span style="color:var(--text-sub)">ログインボタン</span>
+      </div>
+      <textarea placeholder="この node にコメントを残す…"></textarea>
+      <div class="input-actions">
+        <span class="hint"><span class="sync">✓</span> GitHub コメントと同期されます</span>
+        <button class="btn">コメント</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ===== 注釈 ===== -->
+<div class="annotations">
+  <h3>画面構成の注釈 (レビュー用)</h3>
+  <div class="annotation"><span class="num">1</span> トップバー: ソース切替 (ローカルフォルダ / リポジトリ / GitHub PR) とブランチ選択</div>
+  <div class="annotation"><span class="num">2</span> ファイルツリー: GitHub 風。.pen ファイルにバッジとコメント数表示</div>
+  <div class="annotation"><span class="num">3</span> Viewer: .pen を canvas に描画。node クリックで選択 (青枠 + node id)</div>
+  <div class="annotation"><span class="num">4</span> コメントピン: node に紐づくコメントの位置表示。解決済みは緑</div>
+  <div class="annotation"><span class="num">5</span> コメントパネル: node に紐づくコメント一覧。GitHub リンク付き</div>
+  <div class="annotation"><span class="num">6</span> コメント入力: 選択中の node にコメント。GitHub と同期</div>
+</div>
+
+</body>
+</html>

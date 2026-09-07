@@ -18,9 +18,7 @@ export function App() {
   const [filetreeOpen, setFiletreeOpen] = useState(true);
   const [commentsOpen, setCommentsOpen] = useState(true);
   const [prModalOpen, setPrModalOpen] = useState(false);
-  const [prOwner, setPrOwner] = useState("");
-  const [prRepo, setPrRepo] = useState("");
-  const [prNumber, setPrNumber] = useState("");
+  const [prUrl, setPrUrl] = useState("");
   const [prError, setPrError] = useState<string | null>(null);
   const [prLoading, setPrLoading] = useState(false);
 
@@ -30,17 +28,24 @@ export function App() {
       .then((body) => setSources(Array.isArray(body) ? body : []));
   }, []);
 
+  function parsePrUrl(url: string): { owner: string; repo: string; pullNumber: number } | null {
+    const m = url.trim().match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
+    if (!m) return null;
+    return { owner: m[1], repo: m[2], pullNumber: Number(m[3]) };
+  }
+
   async function addPrSource() {
+    const parsed = parsePrUrl(prUrl);
+    if (!parsed) {
+      setPrError("GitHub の PR URL を入力してください");
+      return;
+    }
     setPrError(null);
     setPrLoading(true);
     const res = await fetch("/api/sources/pr", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        owner: prOwner.trim(),
-        repo: prRepo.trim(),
-        pullNumber: Number(prNumber),
-      }),
+      body: JSON.stringify(parsed),
     });
     setPrLoading(false);
     if (!res.ok) {
@@ -53,9 +58,7 @@ export function App() {
     setActiveFile(null);
     setSelectedNodeId(null);
     setPrModalOpen(false);
-    setPrOwner("");
-    setPrRepo("");
-    setPrNumber("");
+    setPrUrl("");
   }
 
   useEffect(() => {
@@ -145,34 +148,16 @@ export function App() {
             </div>
             <div className="modal-body">
               <div className="modal-desc">
-                GitHub の Pull Request をソースとして追加します。
+                GitHub の Pull Request の URL を入力してソースとして追加します。
               </div>
               <label className="modal-field">
-                <span className="modal-label">owner</span>
+                <span className="modal-label">PR URL</span>
                 <input
                   className="modal-input"
-                  placeholder="例: tomoasleep"
-                  value={prOwner}
-                  onChange={(e) => setPrOwner(e.target.value)}
+                  placeholder="https://github.com/owner/repo/pull/12"
+                  value={prUrl}
+                  onChange={(e) => setPrUrl(e.target.value)}
                   autoFocus
-                />
-              </label>
-              <label className="modal-field">
-                <span className="modal-label">repo</span>
-                <input
-                  className="modal-input"
-                  placeholder="例: penhub"
-                  value={prRepo}
-                  onChange={(e) => setPrRepo(e.target.value)}
-                />
-              </label>
-              <label className="modal-field">
-                <span className="modal-label">PR 番号</span>
-                <input
-                  className="modal-input"
-                  placeholder="例: 12"
-                  value={prNumber}
-                  onChange={(e) => setPrNumber(e.target.value)}
                 />
               </label>
               {prError && <div className="modal-error">{prError}</div>}
@@ -189,7 +174,7 @@ export function App() {
                 type="button"
                 className="modal-submit"
                 onClick={addPrSource}
-                disabled={!prOwner || !prRepo || !prNumber || prLoading}
+                disabled={!prUrl.trim() || prLoading}
               >
                 {prLoading ? "読み込み中…" : "追加"}
               </button>

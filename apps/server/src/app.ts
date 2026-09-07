@@ -1,20 +1,42 @@
 import { Hono } from "hono";
 import { createSourceRegistry, type SourceRegistry } from "./source-registry";
 import { createCommentStore, type CommentStore } from "./comment-store";
+import { createGithubClient, type GithubClient } from "./github-client";
 
 export interface PenhubApp {
   fetch: (request: Request | string) => Promise<Response>;
   registerFolder: (id: string, path: string) => void;
 }
 
-export function createApp(options?: { commentStore?: CommentStore }): PenhubApp {
+export function createApp(options?: {
+  commentStore?: CommentStore;
+  githubClient?: GithubClient;
+}): PenhubApp {
   const registry: SourceRegistry = createSourceRegistry();
   const comments: CommentStore =
     options?.commentStore ?? createCommentStore(":memory:");
+  const github: GithubClient =
+    options?.githubClient ??
+    createGithubClient({ token: process.env.GITHUB_TOKEN ?? "" });
   const app = new Hono();
 
   app.get("/api/sources", (c) => {
     return c.json(registry.list());
+  });
+
+  app.post("/api/sources/pr", async (c) => {
+    const body = await c.req.json();
+    const { owner, repo, pullNumber } = body;
+    if (!owner || !repo || !pullNumber) {
+      return c.json({ error: "owner, repo, pullNumber are required" }, 400);
+    }
+    const id = `pr-${owner}-${repo}-${pullNumber}`;
+    try {
+      const source = await registry.registerPr(id, owner, repo, pullNumber, github);
+      return c.json(source, 201);
+    } catch {
+      return c.json({ error: "Failed to load PR" }, 400);
+    }
   });
 
   app.get("/api/sources/:id/files", (c) => {
@@ -26,11 +48,11 @@ export function createApp(options?: { commentStore?: CommentStore }): PenhubApp 
     }
   });
 
-  app.get("/api/sources/:id/files/*", (c) => {
+  app.get("/api/sources/:id/files/*", async (c) => {
     const id = c.req.param("id");
     const path = c.req.path.replace(`/api/sources/${id}/files/`, "");
     try {
-      return c.json({ content: registry.readFile(id, path) });
+      return c.json({ content: await registry.readFile(id, path) });
     } catch {
       return c.json({ error: "File not found" }, 404);
     }

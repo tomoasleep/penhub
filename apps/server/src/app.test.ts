@@ -3,6 +3,34 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createApp } from "./app";
+import type { GithubClient } from "./github-client";
+
+function fakeGithubClient(): GithubClient {
+  return {
+    async getPr() {
+      return {
+        number: 1,
+        title: "test PR",
+        head: { ref: "feature", sha: "abc123" },
+        base: { ref: "main" },
+      };
+    },
+    async listPrFiles() {
+      return [
+        { filename: "src/login.pen", status: "modified", additions: 1, deletions: 0, changes: 1 },
+      ];
+    },
+    async getFileContent() {
+      return '{"version":"1"}';
+    },
+    async createReviewComment() {
+      return { id: 1 };
+    },
+    async listReviewComments() {
+      return [];
+    },
+  };
+}
 
 describe("penhub API", () => {
   let dir: string;
@@ -117,5 +145,48 @@ describe("penhub API", () => {
     const body = await res.json();
     expect(body).toHaveLength(1);
     expect(body[0].body).toBe("コメント1");
+  });
+
+  it("POST /api/sources/pr registers a PR source", async () => {
+    const prApp = createApp({ githubClient: fakeGithubClient() });
+    const res = await prApp.fetch(
+      new Request("http://localhost/api/sources/pr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner: "owner", repo: "repo", pullNumber: 1 }),
+      })
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body).toMatchObject({ type: "pr", owner: "owner", repo: "repo", pullNumber: 1 });
+
+    const filesRes = await prApp.fetch("/api/sources/pr-owner-repo-1/files");
+    expect(filesRes.status).toBe(200);
+    const files = await filesRes.json();
+    expect(files).toEqual([
+      {
+        name: "src",
+        path: "src",
+        type: "dir",
+        children: [{ name: "login.pen", path: "src/login.pen", type: "file" }],
+      },
+    ]);
+
+    const contentRes = await prApp.fetch("/api/sources/pr-owner-repo-1/files/src/login.pen");
+    expect(contentRes.status).toBe(200);
+    const content = await contentRes.json();
+    expect(content).toEqual({ content: '{"version":"1"}' });
+  });
+
+  it("POST /api/sources/pr returns 400 for missing fields", async () => {
+    const prApp = createApp({ githubClient: fakeGithubClient() });
+    const res = await prApp.fetch(
+      new Request("http://localhost/api/sources/pr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner: "owner" }),
+      })
+    );
+    expect(res.status).toBe(400);
   });
 });

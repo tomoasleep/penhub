@@ -60,6 +60,22 @@ test("canvas をクリックすると node が選択されコメント入力が�
   await expect(page.locator(".comment-input .node-tag")).not.toHaveText("未選択");
 });
 
+test("canvas をクリックすると inspector に node の属性が表示される", async ({ page }) => {
+  await openDemoFileAndAwaitRender(page);
+  await expect(page.locator(".inspector-empty")).toBeVisible();
+
+  await page.locator(".canvas").click();
+
+  await expect(page.locator(".inspector .inspector-header .node-name")).not.toBeEmpty();
+  await expect(page.locator(".inspector .node-type")).not.toBeEmpty();
+  await expect(page.locator(".inspector .section-title", { hasText: "Position" })).toBeVisible();
+  await expect(page.locator(".inspector .section-title", { hasText: "Dimensions" })).toBeVisible();
+  await expect(page.locator(".inspector .section-title", { hasText: "Appearance" })).toBeVisible();
+
+  const field = page.locator(".inspector .field", { hasText: "Opacity" });
+  await expect(field.locator(".value")).toHaveText(/\d+%$/);
+});
+
 test("選択した node にコメントを投稿でき、リロード後も表示される", async ({ page }) => {
   await openDemoFileAndAwaitRender(page);
   await page.locator(".canvas").click();
@@ -67,7 +83,7 @@ test("選択した node にコメントを投稿でき、リロード後も表�
 
   const body = `E2E コメント ${Date.now()}`;
   await page.locator(".comment-input textarea").fill(body);
-  await page.getByRole("button", { name: "コメント" }).click();
+  await page.getByRole("button", { name: "コメント", exact: true }).click();
   await expect(
     page.locator(".comments-list .comment .body", { hasText: body }),
   ).toBeVisible();
@@ -79,6 +95,30 @@ test("選択した node にコメントを投稿でき、リロード後も表�
   await expect(
     page.locator(".comments-list .comment .body", { hasText: body }),
   ).toBeVisible();
+});
+
+test("ファイル一覧サイドバーを折りたたみ・展開できる", async ({ page }) => {
+  await openDemoFile(page);
+  await expect(page.locator(".filetree .tree-item", { hasText: "penhub-demo.pen" })).toBeVisible();
+
+  await page.getByRole("button", { name: "ファイル一覧を折りたたむ" }).click();
+  await expect(page.locator(".filetree")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "ファイル一覧を展開" })).toBeVisible();
+
+  await page.getByRole("button", { name: "ファイル一覧を展開" }).click();
+  await expect(page.locator(".filetree .tree-item", { hasText: "penhub-demo.pen" })).toBeVisible();
+});
+
+test("コメントサイドバーを折りたたみ・展開できる", async ({ page }) => {
+  await openDemoFile(page);
+  await expect(page.locator(".comments")).toBeVisible();
+
+  await page.getByRole("button", { name: "コメントを折りたたむ" }).click();
+  await expect(page.locator(".comments")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "コメントを展開" })).toBeVisible();
+
+  await page.getByRole("button", { name: "コメントを展開" }).click();
+  await expect(page.locator(".comments")).toBeVisible();
 });
 
 test("files API がエラーを返してもアプリがクラッシュしない", async ({ page }) => {

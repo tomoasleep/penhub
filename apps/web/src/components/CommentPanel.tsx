@@ -5,9 +5,10 @@ interface Props {
   comments: PenComment[];
   selectedNodeId: string | null;
   onAdd: (body: string) => void;
+  onCollapse?: () => void;
 }
 
-export function CommentPanel({ comments, selectedNodeId, onAdd }: Props) {
+export function CommentPanel({ comments, selectedNodeId, onAdd, onCollapse }: Props) {
   const [body, setBody] = useState("");
 
   const filtered = selectedNodeId
@@ -24,7 +25,20 @@ export function CommentPanel({ comments, selectedNodeId, onAdd }: Props) {
     <div className="comments-panel">
       <div className="comments-header">
         <span>コメント</span>
-        <span className="count">{filtered.length} 件</span>
+        <span className="header-right">
+          <span className="count">{filtered.length} 件</span>
+          {onCollapse && (
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="コメントを折りたたむ"
+              title="コメントを折りたたむ"
+              onClick={onCollapse}
+            >
+              ☰
+            </button>
+          )}
+        </span>
       </div>
       <div className="comments-list">
         {filtered.length === 0 ? (

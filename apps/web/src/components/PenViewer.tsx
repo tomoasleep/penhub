@@ -4,7 +4,7 @@ import { getCanvasKit } from "@open-pencil/core/canvaskit";
 import { SkiaRenderer } from "@open-pencil/core/canvas";
 import { hitTest } from "@open-pencil/scene-graph/hit-test";
 import { computeContentBounds } from "@open-pencil/core/io/formats/raster";
-import type { SceneGraph } from "@open-pencil/scene-graph";
+import type { SceneGraph, SceneNode } from "@open-pencil/scene-graph";
 import type { Surface } from "canvaskit-wasm";
 import canvaskitWasmUrl from "canvaskit-wasm/bin/canvaskit.wasm?url";
 
@@ -13,6 +13,7 @@ interface Props {
   content: string;
   selectedNodeId: string | null;
   onSelectNode: (id: string | null) => void;
+  onSelectedNodeChange?: (node: SceneNode | null) => void;
 }
 
 interface ViewState {
@@ -54,12 +55,19 @@ function fitView(
   };
 }
 
-export function PenViewer({ filePath, content, selectedNodeId, onSelectNode }: Props) {
+export function PenViewer({
+  filePath,
+  content,
+  selectedNodeId,
+  onSelectNode,
+  onSelectedNodeChange,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pageId, setPageId] = useState<string | null>(null);
   const [pages, setPages] = useState<string[]>([]);
+  const [graph, setGraph] = useState<SceneGraph | null>(null);
 
   const graphRef = useRef<SceneGraph | null>(null);
   const rendererRef = useRef<SkiaRenderer | null>(null);
@@ -77,6 +85,11 @@ export function PenViewer({ filePath, content, selectedNodeId, onSelectNode }: P
   }, [selectedNodeId]);
 
   useEffect(() => {
+    const node = graph && selectedNodeId ? (graph.getNode(selectedNodeId) ?? null) : null;
+    onSelectedNodeChange?.(node);
+  }, [graph, selectedNodeId, onSelectedNodeChange]);
+
+  useEffect(() => {
     fitRequestedRef.current = true;
   }, [content, pageId]);
 
@@ -86,6 +99,7 @@ export function PenViewer({ filePath, content, selectedNodeId, onSelectNode }: P
       try {
         const graph = parsePenFile(content);
         graphRef.current = graph;
+        setGraph(graph);
         const pageNodes = graph.getPages();
         const pageIds = pageNodes.map((p) => p.id);
         setPages(pageIds);
@@ -102,6 +116,7 @@ export function PenViewer({ filePath, content, selectedNodeId, onSelectNode }: P
         if (cancelled) return;
         scheduleDraw();
       } catch (e) {
+        setGraph(null);
         setError(e instanceof Error ? e.message : String(e));
       }
     })();

@@ -5,6 +5,7 @@ interface Props {
   nodes: FileNode[];
   activePath: string | null;
   onSelect: (path: string) => void;
+  onCollapse?: () => void;
 }
 
 function TreeItem({
@@ -50,10 +51,23 @@ function TreeItem({
   );
 }
 
-export function FileTree({ nodes, activePath, onSelect }: Props) {
+export function FileTree({ nodes, activePath, onSelect, onCollapse }: Props) {
   return (
     <div className="tree-header">
-      <div className="tree-header-label">ファイル</div>
+      <div className="tree-header-row">
+        {onCollapse && (
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="ファイル一覧を折りたたむ"
+            title="ファイル一覧を折りたたむ"
+            onClick={onCollapse}
+          >
+            ☰
+          </button>
+        )}
+        <div className="tree-header-label">ファイル</div>
+      </div>
       {nodes.map((node) => (
         <TreeItem
           key={node.path}

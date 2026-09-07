@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import type { SceneNode } from "@open-pencil/scene-graph";
 import type { FileNode, PenComment, Source } from "./types";
 import { FileTree } from "./components/FileTree";
 import { PenViewer } from "./components/PenViewer";
 import { CommentPanel } from "./components/CommentPanel";
+import { NodeInspector } from "./components/NodeInspector";
 
 export function App() {
   const [sources, setSources] = useState<Source[]>([]);
@@ -11,13 +13,50 @@ export function App() {
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [content, setContent] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<SceneNode | null>(null);
   const [comments, setComments] = useState<PenComment[]>([]);
+  const [filetreeOpen, setFiletreeOpen] = useState(true);
+  const [commentsOpen, setCommentsOpen] = useState(true);
+  const [prModalOpen, setPrModalOpen] = useState(false);
+  const [prOwner, setPrOwner] = useState("");
+  const [prRepo, setPrRepo] = useState("");
+  const [prNumber, setPrNumber] = useState("");
+  const [prError, setPrError] = useState<string | null>(null);
+  const [prLoading, setPrLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/sources")
       .then((r) => (r.ok ? r.json() : []))
       .then((body) => setSources(Array.isArray(body) ? body : []));
   }, []);
+
+  async function addPrSource() {
+    setPrError(null);
+    setPrLoading(true);
+    const res = await fetch("/api/sources/pr", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        owner: prOwner.trim(),
+        repo: prRepo.trim(),
+        pullNumber: Number(prNumber),
+      }),
+    });
+    setPrLoading(false);
+    if (!res.ok) {
+      setPrError("PR を読み込めませんでした");
+      return;
+    }
+    const added = await res.json();
+    setSources((prev) => [...prev, added]);
+    setActiveSource(added);
+    setActiveFile(null);
+    setSelectedNodeId(null);
+    setPrModalOpen(false);
+    setPrOwner("");
+    setPrRepo("");
+    setPrNumber("");
+  }
 
   useEffect(() => {
     if (!activeSource) return;
@@ -69,6 +108,11 @@ export function App() {
           className="source-select"
           value={activeSource?.id ?? ""}
           onChange={(e) => {
+            if (e.target.value === "__add__") {
+              setPrModalOpen(true);
+              e.target.value = activeSource?.id ?? "";
+              return;
+            }
             const s = sources.find((x) => x.id === e.target.value);
             setActiveSource(s ?? null);
             setActiveFile(null);
@@ -81,19 +125,107 @@ export function App() {
               {s.name}
             </option>
           ))}
+          <option value="__add__">＋ ソースを追加</option>
         </select>
       </header>
-      <div className="layout">
-        <aside className="filetree">
-          <FileTree
-            nodes={files}
-            activePath={activeFile}
-            onSelect={(path) => {
-              setActiveFile(path);
-              setSelectedNodeId(null);
-            }}
-          />
-        </aside>
+      {prModalOpen && (
+        <div className="modal-overlay" onClick={() => setPrModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">ソースを追加</div>
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label="閉じる"
+                title="閉じる"
+                onClick={() => setPrModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-desc">
+                GitHub の Pull Request をソースとして追加します。
+              </div>
+              <label className="modal-field">
+                <span className="modal-label">owner</span>
+                <input
+                  className="modal-input"
+                  placeholder="例: tomoasleep"
+                  value={prOwner}
+                  onChange={(e) => setPrOwner(e.target.value)}
+                  autoFocus
+                />
+              </label>
+              <label className="modal-field">
+                <span className="modal-label">repo</span>
+                <input
+                  className="modal-input"
+                  placeholder="例: penhub"
+                  value={prRepo}
+                  onChange={(e) => setPrRepo(e.target.value)}
+                />
+              </label>
+              <label className="modal-field">
+                <span className="modal-label">PR 番号</span>
+                <input
+                  className="modal-input"
+                  placeholder="例: 12"
+                  value={prNumber}
+                  onChange={(e) => setPrNumber(e.target.value)}
+                />
+              </label>
+              {prError && <div className="modal-error">{prError}</div>}
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="modal-cancel"
+                onClick={() => setPrModalOpen(false)}
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                className="modal-submit"
+                onClick={addPrSource}
+                disabled={!prOwner || !prRepo || !prNumber || prLoading}
+              >
+                {prLoading ? "読み込み中…" : "追加"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div
+        className={`layout ${filetreeOpen ? "" : "filetree-collapsed"} ${commentsOpen ? "" : "comments-collapsed"}`}
+      >
+        {!filetreeOpen && (
+          <div className="rail rail-left">
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="ファイル一覧を展開"
+              title="ファイル一覧を展開"
+              onClick={() => setFiletreeOpen(true)}
+            >
+              ☰
+            </button>
+          </div>
+        )}
+        {filetreeOpen && (
+          <aside className="filetree">
+            <FileTree
+              nodes={files}
+              activePath={activeFile}
+              onSelect={(path) => {
+                setActiveFile(path);
+                setSelectedNodeId(null);
+              }}
+              onCollapse={() => setFiletreeOpen(false)}
+            />
+          </aside>
+        )}
         <main className="main">
           {activeFile && content ? (
             <PenViewer
@@ -101,6 +233,7 @@ export function App() {
               content={content}
               selectedNodeId={selectedNodeId}
               onSelectNode={setSelectedNodeId}
+              onSelectedNodeChange={setSelectedNode}
             />
           ) : (
             <div className="empty-state">
@@ -110,13 +243,30 @@ export function App() {
             </div>
           )}
         </main>
-        <aside className="comments">
-          <CommentPanel
-            comments={comments}
-            selectedNodeId={selectedNodeId}
-            onAdd={addComment}
-          />
-        </aside>
+        {commentsOpen && (
+          <aside className="comments">
+            <NodeInspector node={selectedNode} />
+            <CommentPanel
+              comments={comments}
+              selectedNodeId={selectedNodeId}
+              onAdd={addComment}
+              onCollapse={() => setCommentsOpen(false)}
+            />
+          </aside>
+        )}
+        {!commentsOpen && (
+          <div className="rail rail-right">
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="コメントを展開"
+              title="コメントを展開"
+              onClick={() => setCommentsOpen(true)}
+            >
+              ☰
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

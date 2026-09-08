@@ -34,11 +34,33 @@ export interface GithubClient {
 export function createGithubClient(options: {
   baseUrl?: string;
   token: string;
+  cacheTtlMs?: number;
 }): GithubClient {
   const octokit = new Octokit({
     auth: options.token,
     baseUrl: options.baseUrl,
   });
+
+  const cacheTtlMs = options.cacheTtlMs ?? 5 * 60 * 1000;
+  const contentCache = new Map<string, { value: string; expiresAt: number }>();
+
+  function cacheKey(owner: string, repo: string, path: string, ref: string): string {
+    return `${owner}/${repo}/${path}@${ref}`;
+  }
+
+  function getCached(key: string): string | null {
+    const entry = contentCache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      contentCache.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+
+  function setCached(key: string, value: string): void {
+    contentCache.set(key, { value, expiresAt: Date.now() + cacheTtlMs });
+  }
 
   return {
     async getPr(owner, repo, pullNumber) {
@@ -69,6 +91,10 @@ export function createGithubClient(options: {
       }));
     },
     async getFileContent(owner, repo, path, ref) {
+      const key = cacheKey(owner, repo, path, ref);
+      const cached = getCached(key);
+      if (cached !== null) return cached;
+
       const res = await octokit.rest.repos.getContent({
         owner,
         repo,
@@ -78,7 +104,9 @@ export function createGithubClient(options: {
       if (Array.isArray(res.data) || !("content" in res.data)) {
         throw new Error(`Not a file: ${path}`);
       }
-      return Buffer.from(res.data.content, "base64").toString("utf-8");
+      const content = Buffer.from(res.data.content, "base64").toString("utf-8");
+      setCached(key, content);
+      return content;
     },
     async createReviewComment({ owner, repo, pullNumber, commitId, path, line, body }) {
       const res = await octokit.rest.pulls.createReviewComment({

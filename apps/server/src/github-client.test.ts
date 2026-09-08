@@ -59,4 +59,20 @@ describe("createGithubClient", () => {
     const comments = await client.listReviewComments("admin", "repo", 1);
     expect(Array.isArray(comments)).toBe(true);
   });
+
+  it("caches file content and returns the cached value on repeat calls", async () => {
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner: "admin",
+      repo: "repo",
+      path: "src/login.pen",
+      message: "add login.pen",
+      content: Buffer.from('{"version":"1"}').toString("base64"),
+    });
+
+    const first = await client.getFileContent("admin", "repo", "src/login.pen", "main");
+    expect(first).toBe('{"version":"1"}');
+
+    const second = await client.getFileContent("admin", "repo", "src/login.pen", "main");
+    expect(second).toBe('{"version":"1"}');
+  });
 });

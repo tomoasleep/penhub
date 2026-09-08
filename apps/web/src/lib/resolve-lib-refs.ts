@@ -50,6 +50,20 @@ function walk(value: unknown, libs: Map<string, Record<string, LibVariable>>): u
   return value;
 }
 
+function normalizePath(path: string): string {
+  const parts = path.split("/");
+  const out: string[] = [];
+  for (const part of parts) {
+    if (part === "" || part === ".") continue;
+    if (part === "..") {
+      out.pop();
+      continue;
+    }
+    out.push(part);
+  }
+  return out.join("/");
+}
+
 export async function resolveLibRefs(
   content: string,
   filePath: string,
@@ -63,7 +77,7 @@ export async function resolveLibRefs(
   const dir = filePath.includes("/") ? filePath.slice(0, filePath.lastIndexOf("/") + 1) : "";
   const libs = new Map<string, Record<string, LibVariable>>();
   for (const [alias, uri] of Object.entries(imports)) {
-    const libContent = await readFile((dir + uri).replace(/\.\//g, ""));
+    const libContent = await readFile(normalizePath(dir + uri));
     const libDoc = JSON.parse(libContent) as LibDoc;
     libs.set(alias, libDoc.variables ?? {});
   }

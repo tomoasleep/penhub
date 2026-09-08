@@ -100,4 +100,26 @@ describe("resolveLibRefs", () => {
     expect(doc.children[0].gap).toBe("$lib:getSpace(\"missing\")");
     expect(doc.children[1].fill).toBe("$lib:getColor(\"space-1\")");
   });
+
+  it("相対パス ../ を正規化してライブラリを解決する", async () => {
+    const content = JSON.stringify({
+      version: "2.17",
+      imports: { lib: "../design.lib.pen" },
+      children: [{ id: "a", type: "frame", gap: "$lib:getSpace(\"space-2\")" }],
+    });
+    const result = await resolveLibRefs(content, "src/screens/a.pen", "src", makeFetch({ "src/design.lib.pen": LIB }));
+    const doc = JSON.parse(result);
+    expect(doc.children[0].gap).toBe(8);
+  });
+
+  it("ディレクトリの無いファイルからの相対パスを解決する", async () => {
+    const content = JSON.stringify({
+      version: "2.17",
+      imports: { lib: "./design.lib.pen" },
+      children: [{ id: "a", type: "frame", gap: "$lib:getSpace(\"space-1\")" }],
+    });
+    const result = await resolveLibRefs(content, "a.pen", "src", makeFetch({ "design.lib.pen": LIB }));
+    const doc = JSON.parse(result);
+    expect(doc.children[0].gap).toBe(4);
+  });
 });

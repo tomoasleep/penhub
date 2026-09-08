@@ -104,7 +104,16 @@ export function createGithubClient(options: {
       if (Array.isArray(res.data) || !("content" in res.data)) {
         throw new Error(`Not a file: ${path}`);
       }
-      const content = Buffer.from(res.data.content, "base64").toString("utf-8");
+      let content: string;
+      if (res.data.content) {
+        content = Buffer.from(res.data.content, "base64").toString("utf-8");
+      } else if (res.data.download_url) {
+        const dl = await fetch(res.data.download_url);
+        if (!dl.ok) throw new Error(`Failed to download: ${path}`);
+        content = await dl.text();
+      } else {
+        throw new Error(`Not a file: ${path}`);
+      }
       setCached(key, content);
       return content;
     },

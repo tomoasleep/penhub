@@ -1,0 +1,11 @@
+{
+  "version": "2.17",
+  "variables": {
+    "primary": { "type": "color", "value": "#3B82F6" },
+    "text-primary": { "type": "color", "value": "#111827" },
+    "space-1": { "type": "number", "value": 4 },
+    "space-2": { "type": "number", "value": 8 },
+    "font-heading": { "type": "number", "value": 24 }
+  },
+  "children": []
+}

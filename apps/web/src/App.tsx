@@ -212,8 +212,9 @@ export function App() {
           </aside>
         )}
         <main className="main">
-          {activeFile && content ? (
+          {activeSource && activeFile && content ? (
             <PenViewer
+              sourceId={activeSource.id}
               filePath={activeFile}
               content={content}
               selectedNodeId={selectedNodeId}

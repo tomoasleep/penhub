@@ -7,8 +7,10 @@ import { computeContentBounds } from "@open-pencil/core/io/formats/raster";
 import type { SceneGraph, SceneNode } from "@open-pencil/scene-graph";
 import type { Surface } from "canvaskit-wasm";
 import canvaskitWasmUrl from "canvaskit-wasm/bin/canvaskit.wasm?url";
+import { resolveLibRefs } from "../lib/resolve-lib-refs";
 
 interface Props {
+  sourceId: string;
   filePath: string;
   content: string;
   selectedNodeId: string | null;
@@ -56,6 +58,7 @@ function fitView(
 }
 
 export function PenViewer({
+  sourceId,
   filePath,
   content,
   selectedNodeId,
@@ -97,7 +100,13 @@ export function PenViewer({
     let cancelled = false;
     (async () => {
       try {
-        const graph = parsePenFile(content);
+        const resolved = await resolveLibRefs(content, filePath, sourceId, async (path) => {
+          const res = await fetch(`/api/sources/${sourceId}/files/${path}`);
+          if (!res.ok) throw new Error(`Failed to load library: ${path}`);
+          const body = (await res.json()) as { content?: string };
+          return body.content ?? "";
+        });
+        const graph = parsePenFile(resolved);
         graphRef.current = graph;
         setGraph(graph);
         const pageNodes = graph.getPages();

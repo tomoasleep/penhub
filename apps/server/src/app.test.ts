@@ -189,4 +189,35 @@ describe("penhub API", () => {
     );
     expect(res.status).toBe(400);
   });
+
+  it("persists a PR source across app instances via dbPath", async () => {
+    const dbPath = join(dir, "penhub.db");
+    const first = createApp({ githubClient: fakeGithubClient(), dbPath });
+    const addRes = await first.fetch(
+      new Request("http://localhost/api/sources/pr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner: "owner", repo: "repo", pullNumber: 1 }),
+      })
+    );
+    expect(addRes.status).toBe(201);
+
+    const second = createApp({ githubClient: fakeGithubClient(), dbPath });
+    const listRes = await second.fetch("/api/sources");
+    const body = await listRes.json();
+    expect(body).toHaveLength(1);
+    expect(body[0]).toMatchObject({ id: "pr-owner-repo-1", type: "pr" });
+
+    const filesRes = await second.fetch("/api/sources/pr-owner-repo-1/files");
+    expect(filesRes.status).toBe(200);
+    const files = await filesRes.json();
+    expect(files).toEqual([
+      {
+        name: "src",
+        path: "src",
+        type: "dir",
+        children: [{ name: "login.pen", path: "src/login.pen", type: "file" }],
+      },
+    ]);
+  });
 });

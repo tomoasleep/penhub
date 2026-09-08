@@ -44,6 +44,8 @@ bun run dev:web
 
 `PENHUB_DEMO_DIR` を指定すると、そのフォルダがソースとして登録される。
 
+追加した PR ソースは SQLite (`penhub.db`) に永続化され、サーバー再起動後も保持される。DB の保存先は `PENHUB_DB` 環境変数で変更できる。
+
 ## GitHub の設定
 
 Pull Request をソースとして追加するには、GitHub API を呼ぶための **Personal Access Token** が必要です。

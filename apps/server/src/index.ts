@@ -2,7 +2,8 @@ import { serve } from "@hono/node-server";
 import { resolve } from "node:path";
 import { createApp } from "./app";
 
-const app = createApp();
+const dbPath = process.env.PENHUB_DB ?? resolve(process.cwd(), "penhub.db");
+const app = createApp({ dbPath });
 
 const demoDir = process.env.PENHUB_DEMO_DIR;
 if (demoDir) {

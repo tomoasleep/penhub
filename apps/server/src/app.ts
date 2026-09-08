@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createSourceRegistry, type SourceRegistry } from "./source-registry";
+import { createSourceStore, type SourceStore } from "./source-store";
 import { createCommentStore, type CommentStore } from "./comment-store";
 import { createGithubClient, type GithubClient } from "./github-client";
 
@@ -11,8 +12,13 @@ export interface PenhubApp {
 export function createApp(options?: {
   commentStore?: CommentStore;
   githubClient?: GithubClient;
+  sourceStore?: SourceStore;
+  dbPath?: string;
 }): PenhubApp {
-  const registry: SourceRegistry = createSourceRegistry();
+  const registry: SourceRegistry = createSourceRegistry({
+    store: options?.sourceStore ?? createSourceStore(options?.dbPath ?? ":memory:"),
+    githubClient: options?.githubClient,
+  });
   const comments: CommentStore =
     options?.commentStore ?? createCommentStore(":memory:");
   const github: GithubClient =
@@ -39,10 +45,10 @@ export function createApp(options?: {
     }
   });
 
-  app.get("/api/sources/:id/files", (c) => {
+  app.get("/api/sources/:id/files", async (c) => {
     const id = c.req.param("id");
     try {
-      return c.json(registry.listFiles(id));
+      return c.json(await registry.listFiles(id));
     } catch {
       return c.json({ error: "Source not found" }, 404);
     }

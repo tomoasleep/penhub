@@ -15,15 +15,15 @@ export function createApp(options?: {
   sourceStore?: SourceStore;
   dbPath?: string;
 }): PenhubApp {
-  const registry: SourceRegistry = createSourceRegistry({
-    store: options?.sourceStore ?? createSourceStore(options?.dbPath ?? ":memory:"),
-    githubClient: options?.githubClient,
-  });
-  const comments: CommentStore =
-    options?.commentStore ?? createCommentStore(":memory:");
   const github: GithubClient =
     options?.githubClient ??
     createGithubClient({ token: process.env.GITHUB_TOKEN ?? "" });
+  const registry: SourceRegistry = createSourceRegistry({
+    store: options?.sourceStore ?? createSourceStore(options?.dbPath ?? ":memory:"),
+    githubClient: github,
+  });
+  const comments: CommentStore =
+    options?.commentStore ?? createCommentStore(":memory:");
   const app = new Hono();
 
   app.get("/api/sources", (c) => {

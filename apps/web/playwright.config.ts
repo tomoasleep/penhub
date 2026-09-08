@@ -13,7 +13,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "npx tsx src/index.ts",
+      command: "npx tsx e2e-server.ts",
       cwd: join(root, "apps/server"),
       url: "http://localhost:8787/api/sources",
       env: {

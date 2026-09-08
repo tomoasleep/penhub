@@ -44,6 +44,42 @@ bun run dev:web
 
 `PENHUB_DEMO_DIR` を指定すると、そのフォルダがソースとして登録される。
 
+## GitHub の設定
+
+Pull Request をソースとして追加するには、GitHub API を呼ぶための **Personal Access Token** が必要です。
+
+### 1. Token を発行する
+
+1. GitHub の [Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) を開く
+2. **Fine-grained tokens** を選択し **Generate new token** をクリック
+3. リポジトリのアクセスを選択し、追加したい PR が含まれるリポジトリを許可
+4. **Repository permissions** で以下を付与:
+   - **Contents**: Read-only (PR のファイル内容を取得)
+   - **Pull requests**: Read and write (レビューコメントの読み書き)
+5. 生成された token をコピー
+
+### 2. 環境変数に設定する
+
+```sh
+# シェルで直接指定する場合
+GITHUB_TOKEN=ghp_xxx bun run dev:server
+
+# .env ファイルを使う場合
+echo "GITHUB_TOKEN=ghp_xxx" > .env
+```
+
+`.env` は `.gitignore` に含まれているため、コミットされません。
+
+### 3. 動作確認
+
+バックエンドを起動した状態で、ブラウザのソース選択から「＋ ソースを追加」を選び、PR の URL を入力すると追加できます。
+
+```
+https://github.com/owner/repo/pull/12
+```
+
+> **Note**: token 未設定のまま PR を追加しようとするとエラーになります。ローカルフォルダのみ使う場合は token は不要です。
+
 ## テスト
 
 ```sh

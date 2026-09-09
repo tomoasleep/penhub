@@ -58,6 +58,34 @@ body {
   font-size: 13px;
 }
 
+.pr-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  color: var(--text);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.pr-link-btn:hover {
+  background: var(--bg-hover);
+  border-color: #8d96a0;
+}
+.pr-link-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.pr-link-btn .ext-icon {
+  color: var(--text-sub);
+}
+.pr-link-btn:hover .ext-icon {
+  color: var(--text);
+}
+
 .pr-add-btn {
   background: var(--accent-bg);
   color: #fff;

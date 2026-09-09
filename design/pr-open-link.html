@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>penhub — PR を開く UI (レビュー用)</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-sub: #161b22;
+    --bg-hover: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-sub: #8b949e;
+    --accent: #58a6ff;
+    --accent-bg: #1f6feb;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ===== レビュー用コントロール (モック専用・製品には含めない) ===== */
+  .review-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 24px;
+    padding: 10px 16px;
+    background: #14100a;
+    border-bottom: 1px solid var(--yellow);
+  }
+  .review-bar .review-group {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .review-bar legend {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--yellow);
+    padding: 0 4px;
+    letter-spacing: 0.5px;
+  }
+  .review-bar label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .review-bar input[type="radio"] {
+    accent-color: var(--accent-bg);
+  }
+  .review-desc {
+    flex: 1;
+    min-width: 220px;
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+  .review-desc b { color: var(--text); }
+
+  /* ===== トップバー ===== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--bg-sub);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-weight: 700; font-size: 16px; }
+  .logo span { color: var(--accent); }
+  .source-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  /* ===== PR を開く UI (レビュー対象) ===== */
+  .pr-open-ui { display: none; }
+  body[data-variant="1"] .pr-open-ui.v1,
+  body[data-variant="2"] .pr-open-ui.v2,
+  body[data-variant="3"] .pr-open-ui.v3 { display: inline-flex; }
+  body[data-source="folder"] .pr-open-ui.v1,
+  body[data-source="folder"] .pr-open-ui.v2,
+  body[data-source="folder"] .pr-open-ui.v3 { display: none; }
+
+  .pr-link-btn {
+    align-items: center;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: var(--text);
+    font-size: 13px;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .pr-link-btn:hover { background: var(--bg-hover); border-color: #8d96a0; }
+  .pr-link-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .pr-link-btn .ext-icon { color: var(--text-sub); }
+  .pr-link-btn:hover .ext-icon { color: var(--text); }
+
+  .pr-link-icon {
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .pr-link-icon:hover { background: var(--bg-hover); border-color: #8d96a0; }
+  .pr-link-icon:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* ===== ハンバーガーボタン ===== */
+  .icon-btn {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-sub);
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: var(--bg-hover); color: var(--text); }
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* ===== レイアウト ===== */
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .layout.filetree-collapsed { grid-template-columns: 40px 1fr 320px; }
+  .layout.comments-collapsed { grid-template-columns: 280px 1fr 40px; }
+  .layout.filetree-collapsed.comments-collapsed { grid-template-columns: 40px 1fr 40px; }
+  .layout:not(.filetree-collapsed) .rail-left { display: none; }
+  .layout:not(.comments-collapsed) .rail-right { display: none; }
+  .layout.filetree-collapsed .filetree { display: none; }
+  .layout.comments-collapsed .comments { display: none; }
+
+  /* ===== 折りたたみレール ===== */
+  .rail {
+    background: var(--bg-sub);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8px;
+  }
+  .rail-left { border-right: 1px solid var(--border); }
+  .rail-right { border-left: 1px solid var(--border); }
+
+  /* ===== ファイルツリー ===== */
+  .filetree {
+    border-right: 1px solid var(--border);
+    background: var(--bg-sub);
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+  .tree-header-label {
+    padding: 8px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-sub);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tree-header-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+  }
+  .tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 16px;
+    cursor: pointer;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .tree-item:hover { background: var(--bg-hover); }
+  .tree-item.active { background: var(--accent-bg); color: #fff; }
+  .tree-item .icon {
+    width: 16px;
+    text-align: center;
+    color: var(--text-sub);
+    flex-shrink: 0;
+  }
+  .tree-item.active .icon { color: #fff; }
+  .tree-item .name { overflow: hidden; text-overflow: ellipsis; }
+  .tree-item .pen-badge {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--purple);
+    border: 1px solid var(--purple);
+    border-radius: 4px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+
+  /* ===== メイン (Viewer) ===== */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .file-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-sub);
+  }
+  .file-header .path { color: var(--text-sub); }
+  .page-tabs { display: flex; gap: 4px; }
+  .page-tab {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-sub);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .page-tab.active { background: var(--accent-bg); color: #fff; border-color: var(--accent-bg); }
+  .file-header .pr-open-ui.v3 { margin-left: auto; }
+
+  .canvas-area {
+    flex: 1;
+    background: #0a0c10;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .canvas {
+    width: 560px;
+    height: 400px;
+    max-width: calc(100vw - 32px);
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    position: relative;
+    cursor: crosshair;
+  }
+  .mock-frame {
+    position: absolute;
+    inset: 20px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .mock-heading { font-size: 18px; font-weight: 700; color: #24292f; margin-bottom: 16px; }
+  .mock-text { font-size: 12px; color: #57606a; margin-bottom: 6px; }
+  .mock-input {
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: #57606a;
+    background: #fff;
+    margin-bottom: 16px;
+  }
+  .mock-btn {
+    display: block;
+    background: #1f6feb;
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .selection {
+    position: absolute;
+    border: 2px solid var(--accent);
+    border-radius: 2px;
+    pointer-events: none;
+    box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.3);
+  }
+  .selection .label {
+    position: absolute;
+    top: -22px;
+    left: -2px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-family: monospace;
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* ===== コメントパネル ===== */
+  .comments {
+    border-left: 1px solid var(--border);
+    background: var(--bg-sub);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .comments-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  .comments-header {
+    padding: 12px 12px 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .comments-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .comments-header .count { color: var(--text-sub); font-weight: 400; font-size: 12px; }
+  .comments-list { flex: 1; overflow-y: auto; }
+  .comment { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .comment .meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .comment .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-bg);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .comment .author { font-weight: 600; font-size: 13px; }
+  .comment .time { color: var(--text-sub); font-size: 12px; }
+  .comment .gh-badge {
+    font-size: 10px;
+    color: var(--green);
+    border: 1px solid var(--green);
+    border-radius: 4px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .comment .node-tag {
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--purple);
+    background: rgba(188, 140, 255, 0.12);
+    border: 1px solid rgba(188, 140, 255, 0.3);
+    border-radius: 4px;
+    padding: 0 5px;
+    margin-left: auto;
+  }
+  .comment .body { font-size: 13px; color: var(--text); }
+
+  .comment-input {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .comment-input .node-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+  .comment-input .node-tag {
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--purple);
+    background: rgba(188, 140, 255, 0.12);
+    border: 1px solid rgba(188, 140, 255, 0.3);
+    border-radius: 4px;
+    padding: 0 5px;
+  }
+  .comment-input textarea {
+    width: 100%;
+    min-height: 80px;
+    background: var(--bg-sub);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .comment-input textarea:focus { outline: none; border-color: var(--accent); }
+  .comment-input .input-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .comment-input .hint { font-size: 11px; color: var(--text-sub); }
+  .comment-input .btn {
+    background: var(--accent-bg);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  body[data-source="pr"] .hint-folder { display: none; }
+  body[data-source="folder"] .hint-pr { display: none; }
+  body[data-source="folder"] .gh-badge { display: none; }
+
+  /* ===== 狭い幅での fallback ===== */
+  @media (max-width: 900px) {
+    body {
+      height: auto;
+      overflow: visible;
+    }
+    .layout {
+      display: block;
+      overflow: visible;
+    }
+    .filetree { border-right: none; border-bottom: 1px solid var(--border); }
+    .canvas-area { min-height: 360px; }
+    .comments { border-left: none; border-top: 1px solid var(--border); }
+  }
+
+  /* ===== レビュー用の説明 ===== */
+  .review-note {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-sub);
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .review-note b { color: var(--text); }
+  .review-note code {
+    font-family: monospace;
+    font-size: 11px;
+    background: var(--bg-sub);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 4px;
+  }
+</style>
+</head>
+<body data-variant="1" data-source="pr">
+
+<div class="review-bar" role="region" aria-label="レビュー用コントロール (モック専用)">
+  <fieldset class="review-group">
+    <legend>案を選択</legend>
+    <label><input type="radio" name="variant" value="1" checked> 案1: ラベル付きボタン</label>
+    <label><input type="radio" name="variant" value="2"> 案2: アイコンのみ</label>
+    <label><input type="radio" name="variant" value="3"> 案3: ファイルヘッダー</label>
+  </fieldset>
+  <fieldset class="review-group">
+    <legend>ソースの種類</legend>
+    <label><input type="radio" name="source-kind" value="pr" checked> PR ソース</label>
+    <label><input type="radio" name="source-kind" value="folder"> フォルダソース</label>
+  </fieldset>
+  <div class="review-desc" id="review-desc" aria-live="polite">
+    <b>案1:</b> ソース選択の隣に「GitHub PR を開く」ボタンを置く。ラベルで目的が明確。PR ソースのときのみ表示。
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="logo">pen<span>hub</span></div>
+  <select class="source-select" id="source-select" aria-label="ソースを選択">
+    <option value="demo">demo</option>
+    <option value="pr" selected>tomoasleep/penhub #12</option>
+    <option value="__add__">＋ ソースを追加</option>
+  </select>
+  <a class="pr-open-ui v1 pr-link-btn"
+     href="https://github.com/tomoasleep/penhub/pull/12"
+     target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+    GitHub PR を開く
+    <svg class="ext-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z"/></svg>
+  </a>
+  <a class="pr-open-ui v2 pr-link-icon"
+     href="https://github.com/tomoasleep/penhub/pull/12"
+     target="_blank" rel="noopener noreferrer"
+     aria-label="GitHub の PR #12 を開く" title="GitHub の PR #12 を開く">
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+  </a>
+</div>
+
+<div class="layout" id="layout">
+  <div class="rail rail-left">
+    <button type="button" class="icon-btn" id="filetree-expand" aria-label="ファイル一覧を展開" title="ファイル一覧を展開">☰</button>
+  </div>
+
+  <aside class="filetree">
+    <div class="tree-header-row">
+      <button type="button" class="icon-btn" id="filetree-collapse" aria-label="ファイル一覧を折りたたむ" title="ファイル一覧を折りたたむ">☰</button>
+      <div class="tree-header-label">ファイル</div>
+    </div>
+    <div class="tree-item active">
+      <span class="icon">🖼️</span>
+      <span class="name">penhub-demo.pen</span>
+      <span class="pen-badge">pen</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="file-header">
+      <span class="path">penhub-demo.pen</span>
+      <div class="page-tabs">
+        <div class="page-tab active">Login Screen</div>
+        <div class="page-tab">PR Review</div>
+      </div>
+      <a class="pr-open-ui v3 pr-link-btn"
+         href="https://github.com/tomoasleep/penhub/pull/12"
+         target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+        GitHub PR を開く
+        <svg class="ext-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z"/></svg>
+      </a>
+    </div>
+
+    <div class="canvas-area">
+      <div class="canvas">
+        <div class="mock-frame">
+          <div class="mock-heading">ログイン</div>
+          <div class="mock-text">メールアドレス</div>
+          <div class="mock-input" style="width:100%;">you@example.com</div>
+          <div class="mock-text">パスワード</div>
+          <div class="mock-input" style="width:100%;">••••••••</div>
+          <div style="position:relative;">
+            <div class="mock-btn">ログイン</div>
+            <div class="selection" style="inset:-2px;">
+              <div class="label">0:5</div>
+            </div>
+          </div>
+          <div class="mock-text" style="text-align:center;margin-top:16px;">アカウントをお持ちでない方は <span style="color:#1f6feb;">新規登録</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="comments">
+    <div class="comments-panel">
+      <div class="comments-header">
+        <span>コメント</span>
+        <span class="header-right">
+          <span class="count">2 件</span>
+          <button type="button" class="icon-btn" id="comments-collapse" aria-label="コメントを折りたたむ" title="コメントを折りたたむ">☰</button>
+        </span>
+      </div>
+      <div class="comments-list">
+        <div class="comment">
+          <div class="meta">
+            <div class="avatar">T</div>
+            <span class="author">tomoasleep</span>
+            <span class="time">9/3 10:12</span>
+            <span class="gh-badge">GitHub</span>
+            <span class="node-tag">0:5</span>
+          </div>
+          <div class="body">ログインボタンのラベル、もう少し長さがあってもよさそう</div>
+        </div>
+        <div class="comment">
+          <div class="meta">
+            <div class="avatar">T</div>
+            <span class="author">tomoasleep</span>
+            <span class="time">9/3 10:15</span>
+            <span class="gh-badge">GitHub</span>
+            <span class="node-tag">0:3</span>
+          </div>
+          <div class="body">入力欄の高さを 40px に揃えたい</div>
+        </div>
+      </div>
+      <div class="comment-input">
+        <div class="node-info">
+          <span>コメント先:</span>
+          <span class="node-tag">0:5</span>
+        </div>
+        <textarea placeholder="この node にコメントを残す…"></textarea>
+        <div class="input-actions">
+          <span class="hint hint-pr">GitHub の review comment として投稿されます</span>
+          <span class="hint hint-folder">ローカルに保存されます</span>
+          <button class="btn">コメント</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="rail rail-right">
+    <button type="button" class="icon-btn" id="comments-expand" aria-label="コメントを展開" title="コメントを展開">☰</button>
+  </div>
+</div>
+
+<div class="review-note">
+  <b>レビュー用メモ:</b> PR ソースを表示中に <code>https://github.com/owner/repo/pull/12</code> を開くための UI の配置案の比較モックです。
+  上のバーで案とソースの種類を切り替えられます。リンクは <code>Source</code> の <code>owner / repo / pullNumber</code> から生成し、新しいタブで開きます。
+  フォルダ・リポジトリソースのときは非表示になる想定です。気になる点に注釈をお願いします。
+</div>
+
+<script>
+  const body = document.body;
+  const select = document.getElementById("source-select");
+  const desc = document.getElementById("review-desc");
+
+  const variantDescs = {
+    "1": "<b>案1:</b> ソース選択の隣に「GitHub PR を開く」ボタンを置く。ラベルで目的が明確。PR ソースのときのみ表示。",
+    "2": "<b>案2:</b> 同じ位置に GitHub アイコンのみのボタン。省スペースだが意味がアイコン依存になる。",
+    "3": "<b>案3:</b> ファイルヘッダー側に配置。ファイルを見ている文脈で近いが、PR 単位の操作がファイル単位のバーにあるのが少し不整合。"
+  };
+
+  document.querySelectorAll("input[name='variant']").forEach((r) => {
+    r.addEventListener("change", () => {
+      if (r.checked) {
+        body.dataset.variant = r.value;
+        desc.innerHTML = variantDescs[r.value];
+      }
+    });
+  });
+
+  function setSource(kind) {
+    body.dataset.source = kind;
+    select.value = kind === "pr" ? "pr" : "demo";
+    document.querySelector(`input[name='source-kind'][value='${kind}']`).checked = true;
+  }
+
+  document.querySelectorAll("input[name='source-kind']").forEach((r) => {
+    r.addEventListener("change", () => {
+      if (r.checked) setSource(r.value);
+    });
+  });
+
+  select.addEventListener("change", () => {
+    if (select.value === "pr" || select.value === "demo") {
+      setSource(select.value === "pr" ? "pr" : "folder");
+    } else {
+      select.value = body.dataset.source === "pr" ? "pr" : "demo";
+    }
+  });
+
+  const layout = document.getElementById("layout");
+
+  function bindCollapse(buttonId, className) {
+    document.getElementById(buttonId).addEventListener("click", () => {
+      layout.classList.add(className);
+    });
+  }
+  function bindExpand(buttonId, className) {
+    document.getElementById(buttonId).addEventListener("click", () => {
+      layout.classList.remove(className);
+    });
+  }
+  bindCollapse("filetree-collapse", "filetree-collapsed");
+  bindExpand("filetree-expand", "filetree-collapsed");
+  bindCollapse("comments-collapse", "comments-collapsed");
+  bindExpand("comments-expand", "comments-collapsed");
+
+  const hashParams = new URLSearchParams(location.hash.slice(1));
+  const queryParams = new URLSearchParams(location.search);
+  const initialVariant = queryParams.get("variant") ?? hashParams.get("variant");
+  const initialSource = queryParams.get("source") ?? hashParams.get("source");
+  if (initialVariant && variantDescs[initialVariant]) {
+    body.dataset.variant = initialVariant;
+    desc.innerHTML = variantDescs[initialVariant];
+    document.querySelector(`input[name='variant'][value='${initialVariant}']`).checked = true;
+  }
+  if (initialSource === "pr" || initialSource === "folder") {
+    setSource(initialSource);
+  }
+</script>
+
+</body>
+</html>

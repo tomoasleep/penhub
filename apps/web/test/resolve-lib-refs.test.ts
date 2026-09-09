@@ -82,6 +82,67 @@ describe("resolveLibRefs", () => {
     expect(doc.children[0].padding).toBe(4);
   });
 
+  it("pen の getSpace(分数) 参照をライブラリの getter 変数に解決する", async () => {
+    const content = JSON.stringify({
+      version: "2.17",
+      imports: { lib: "./design.lib.pen" },
+      children: [
+        { id: "a", type: "frame", gap: "$lib:getSpace(1/2)" },
+        { id: "b", type: "frame", gap: "$lib:getSpace(1)" },
+      ],
+    });
+    const lib = JSON.stringify({
+      version: "2.17",
+      variables: {
+        "getSpace(1/2)": { type: "number", value: 2 },
+        "getSpace(1)": { type: "number", value: 8 },
+      },
+      children: [],
+    });
+    const result = await resolveLibRefs(
+      content,
+      "src/a.pen",
+      "src",
+      makeFetch({ "src/design.lib.pen": lib }),
+    );
+    const doc = JSON.parse(result);
+    expect(doc.children[0].gap).toBe(2);
+    expect(doc.children[1].gap).toBe(8);
+  });
+
+  it("pen の getter なしの変数参照と変数間の参照を解決する", async () => {
+    const content = JSON.stringify({
+      version: "2.17",
+      imports: { lib: "./design.lib.pen" },
+      children: [
+        {
+          id: "a",
+          type: "frame",
+          fill: "$lib:surface",
+          fontFamily: "$lib:font-sans",
+        },
+      ],
+    });
+    const lib = JSON.stringify({
+      version: "2.17",
+      variables: {
+        surface: { type: "color", value: "$gray-0" },
+        "gray-0": { type: "color", value: "#ffffff" },
+        "font-sans": { type: "string", value: "Noto Sans JP" },
+      },
+      children: [],
+    });
+    const result = await resolveLibRefs(
+      content,
+      "src/a.pen",
+      "src",
+      makeFetch({ "src/design.lib.pen": lib }),
+    );
+    const doc = JSON.parse(result);
+    expect(doc.children[0].fill).toBe("#ffffff");
+    expect(doc.children[0].fontFamily).toBe("Noto Sans JP");
+  });
+
   it("string 変数を getter で解決する", async () => {
     const content = JSON.stringify({
       version: "2.17",

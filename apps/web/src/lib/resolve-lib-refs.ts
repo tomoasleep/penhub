@@ -11,7 +11,7 @@ interface LibDoc {
   children: unknown[];
 }
 
-const LIB_REF_RE = /^\$([A-Za-z0-9_-]+):(get[A-Za-z0-9]*)\(("([^"]*)"|'([^']*)'|(\d+))\)$/;
+const LIB_REF_RE = /^\$([A-Za-z0-9_-]+):(get[A-Za-z0-9]*)\(("([^"]*)"|'([^']*)'|([^)]*))\)$/;
 
 function resolveValue(variable: LibVariable | undefined, fn: string): string | number | undefined {
   if (!variable) return undefined;
@@ -26,18 +26,43 @@ function resolveValue(variable: LibVariable | undefined, fn: string): string | n
   return undefined;
 }
 
+function resolveVariable(
+  name: string,
+  variables: Record<string, LibVariable>,
+  resolving = new Set<string>(),
+): string | number | undefined {
+  if (resolving.has(name)) return undefined;
+  const variable = variables[name];
+  if (!variable) return undefined;
+  const raw = Array.isArray(variable.value) ? variable.value[0]?.value : variable.value;
+  if (typeof raw !== "string" || !raw.startsWith("$")) return raw;
+  const reference = raw.slice(1);
+  if (!variables[reference]) return raw;
+  return resolveVariable(reference, variables, new Set(resolving).add(name));
+}
+
 function resolveString(
   value: string,
   libs: Map<string, Record<string, LibVariable>>,
 ): string | number {
   const m = value.match(LIB_REF_RE);
-  if (!m) return value;
-  const [, alias, fn, , q1, q2, num] = m;
-  const variables = libs.get(alias);
-  if (!variables) return value;
-  const name = num !== undefined ? num : q1 ?? q2;
-  const resolved = resolveValue(variables[name], fn);
-  return resolved === undefined ? value : resolved;
+  if (m) {
+    const [, alias, fn, , q1, q2, expression] = m;
+    const variables = libs.get(alias);
+    if (variables) {
+      const name = q1 ?? q2 ?? expression.trim();
+      const variable = variables[name] ?? variables[`${fn}(${name})`];
+      const resolved = resolveValue(variable, fn);
+      if (resolved !== undefined) return resolved;
+    }
+  }
+
+  const direct = value.match(/^\$([A-Za-z0-9_-]+):(.+)$/);
+  if (!direct) return value;
+  const directVariables = libs.get(direct[1]);
+  if (!directVariables) return value;
+  const directValue = resolveVariable(direct[2], directVariables);
+  return directValue === undefined ? value : directValue;
 }
 
 function walk(value: unknown, libs: Map<string, Record<string, LibVariable>>): unknown {

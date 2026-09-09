@@ -11,7 +11,7 @@ interface LibDoc {
   children: unknown[];
 }
 
-const LIB_REF_RE = /^\$([A-Za-z0-9_-]+):(getColor|getSpace|getFontSize)\(("([^"]*)"|'([^']*)'|(\d+))\)$/;
+const LIB_REF_RE = /^\$([A-Za-z0-9_-]+):(get[A-Za-z0-9]*)\(("([^"]*)"|'([^']*)'|(\d+))\)$/;
 
 function resolveValue(variable: LibVariable | undefined, fn: string): string | number | undefined {
   if (!variable) return undefined;
@@ -19,8 +19,9 @@ function resolveValue(variable: LibVariable | undefined, fn: string): string | n
   if (fn === "getColor") {
     return variable.type === "color" && typeof raw === "string" ? raw : undefined;
   }
-  if (fn === "getSpace" || fn === "getFontSize") {
-    return variable.type === "number" && typeof raw === "number" ? raw : undefined;
+  if (variable.type === "number") return typeof raw === "number" ? raw : undefined;
+  if (variable.type === "color" || variable.type === "string") {
+    return typeof raw === "string" ? raw : undefined;
   }
   return undefined;
 }

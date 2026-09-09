@@ -9,6 +9,7 @@ const LIB = JSON.stringify({
     "space-1": { type: "number", value: 4 },
     "space-2": { type: "number", value: 8 },
     "font-heading": { type: "number", value: 24 },
+    "font-family": { type: "string", value: "Inter" },
   },
   children: [],
 });
@@ -65,6 +66,33 @@ describe("resolveLibRefs", () => {
     const result = await resolveLibRefs(content, "src/a.pen", "src", makeFetch({ "src/design.lib.pen": LIB }));
     const doc = JSON.parse(result);
     expect(doc.children[0].fontSize).toBe(24);
+  });
+
+  it("未知の number 系 getter をライブラリの number 変数に解決する", async () => {
+    const content = JSON.stringify({
+      version: "2.17",
+      imports: { lib: "./design.lib.pen" },
+      children: [
+        { id: "a", type: "frame", gap: "$lib:getGap(\"space-2\")", padding: "$lib:getRadius(\"space-1\")" },
+      ],
+    });
+    const result = await resolveLibRefs(content, "src/a.pen", "src", makeFetch({ "src/design.lib.pen": LIB }));
+    const doc = JSON.parse(result);
+    expect(doc.children[0].gap).toBe(8);
+    expect(doc.children[0].padding).toBe(4);
+  });
+
+  it("string 変数を getter で解決する", async () => {
+    const content = JSON.stringify({
+      version: "2.17",
+      imports: { lib: "./design.lib.pen" },
+      children: [
+        { id: "a", type: "text", fontFamily: "$lib:getFontFamily(\"font-family\")" },
+      ],
+    });
+    const result = await resolveLibRefs(content, "src/a.pen", "src", makeFetch({ "src/design.lib.pen": LIB }));
+    const doc = JSON.parse(result);
+    expect(doc.children[0].fontFamily).toBe("Inter");
   });
 
   it("複数エイリアスを解決する", async () => {

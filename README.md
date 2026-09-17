@@ -3,7 +3,7 @@
 pen.dev の `.pen` フォーマットファイルを、GitHub 的に確認・レビューできる Web アプリ。
 
 - ローカルフォルダ / Git リポジトリ / GitHub Pull Request のファイル一覧を GitHub 風 UI で表示
-- `.pen` ファイルをブラウザ上で描画 (open-pencil のライブラリを利用、Vue は不使用)
+- `.pen` ファイルをブラウザ上で描画 (open-pencil のライブラリを利用、Vue は不使用)。pen が参照する Web Font (`Noto Sans JP` 等) も pen.dev と同様に動的取得する
 - node に紐づくコメントを残せる。コメントは commit id / node id を保持し、GitHub コメントと相互 sync
 
 ## 技術スタック

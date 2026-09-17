@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { parsePenFile } from "@open-pencil/pen";
+import { fontManager } from "@open-pencil/core";
 import { getCanvasKit } from "@open-pencil/core/canvaskit";
 import { SkiaRenderer } from "@open-pencil/core/canvas";
 import { hitTest } from "@open-pencil/scene-graph/hit-test";
@@ -122,6 +123,7 @@ export function PenViewer({
             locateFile: (file) => (file.endsWith(".wasm") ? canvaskitWasmUrl : file),
           });
         }
+        fontManager.setWebFontFetch((url, init) => fetch(url, init));
         if (cancelled) return;
         scheduleDraw();
       } catch (e) {

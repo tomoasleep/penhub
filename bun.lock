@@ -8,6 +8,25 @@
         "concurrently": "^9.1.0",
       },
     },
+    "apps/cli": {
+      "name": "@penhub/cli",
+      "version": "0.1.0",
+      "bin": {
+        "penhub-render": "./dist/index.js",
+      },
+      "dependencies": {
+        "@open-pencil/core": "^0.14.0",
+        "@open-pencil/pen": "^0.14.0",
+        "@open-pencil/scene-graph": "^0.14.0",
+        "canvaskit-wasm": "^0.40.0",
+      },
+      "devDependencies": {
+        "@types/node": "^22.9.0",
+        "tsx": "^4.19.0",
+        "typescript": "^5.6.0",
+        "vitest": "^2.1.0",
+      },
+    },
     "apps/server": {
       "name": "@penhub/server",
       "version": "0.1.0",
@@ -220,6 +239,8 @@
     "@open-pencil/pen": ["@open-pencil/pen@0.14.0", "", { "dependencies": { "culori": "^4.0.2" }, "peerDependencies": { "@open-pencil/scene-graph": "^0.14.0" } }, "sha512-EaNhisjNdWh3m0V7nb33Rlf/MyfLE6wzOgmcFatQisr4J44O2nf9kIuB71rinodRzo02qRyTeOV3b3NXnDl3dA=="],
 
     "@open-pencil/scene-graph": ["@open-pencil/scene-graph@0.14.0", "", { "dependencies": { "es-toolkit": "^1.46.1", "nanoevents": "^9.1.0", "svgpath": "^2.6.0" } }, "sha512-mWn0owm7pAZoOH0Mu69fBPdApmEGFpoqI2NLJQEgGQkQhXyryV9c5JIR3u5y5VWHmCfIYBsveRCULr1vX0kM2A=="],
+
+    "@penhub/cli": ["@penhub/cli@workspace:apps/cli"],
 
     "@penhub/server": ["@penhub/server@workspace:apps/server"],
 

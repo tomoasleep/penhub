@@ -46,6 +46,28 @@ bun run dev:web
 
 追加した PR ソースは SQLite (`penhub.db`) に永続化され、サーバー再起動後も保持される。DB の保存先は `PENHUB_DB` 環境変数で変更できる。
 
+## pen ファイルを PNG にレンダリングする (CLI)
+
+`apps/cli` の `penhub-render` で `.pen` ファイルを PNG に変換できる。
+
+```sh
+# 開発 (tsx)
+bun run render -- path/to/design.pen -o out.png -s 2
+
+# ビルドして実行
+bun run --cwd apps/cli build
+bun run --cwd apps/cli start -- path/to/design.pen -o out.png
+```
+
+オプション:
+
+- `<file>` — `.pen` ファイルパス (必須)
+- `-o, --output` — 出力 PNG パス (省略時は入力ファイル名 + `.png`)
+- `-s, --scale` — 倍率 (デフォルト: `1`)
+- `-p, --page` — レンダリングするページ名またはインデックス (省略時は先頭ページ)
+
+ライブラリ参照 (`imports` 経由の `$alias:...` 変数) は pen ファイルからの相対パスでローカル解決される。
+
 ## GitHub の設定
 
 Pull Request をソースとして追加するには、GitHub API を呼ぶための **Personal Access Token** が必要です。

@@ -11,13 +11,14 @@
     "dev": "concurrently -n server,web -c blue,green \"bun run dev:server\" \"bun run dev:web\"",
     "dev:server": "bun run --cwd apps/server dev",
     "dev:web": "bun run --cwd apps/web dev",
+    "render": "bun run --cwd apps/cli dev",
     "build": "bun run --cwd apps/server build && bun run --cwd apps/web build",
-    "test": "bun run --cwd apps/server test && bun run --cwd apps/web test",
+    "test": "bun run --cwd apps/server test && bun run --cwd apps/cli test && bun run --cwd apps/web test",
     "test:unit": "bun run --cwd apps/server test",
     "test:e2e": "bun run --cwd apps/web test:e2e",
     "test:e2e:ui": "bun run --cwd apps/web test:e2e:ui",
-    "typecheck": "bun run --cwd apps/server typecheck && bun run --cwd apps/web typecheck",
-    "lint": "bun run --cwd apps/server lint && bun run --cwd apps/web lint"
+    "typecheck": "bun run --cwd apps/server typecheck && bun run --cwd apps/cli typecheck && bun run --cwd apps/web typecheck",
+    "lint": "bun run --cwd apps/server lint && bun run --cwd apps/cli lint && bun run --cwd apps/web lint"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

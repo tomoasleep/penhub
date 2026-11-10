@@ -97,6 +97,7 @@ function resolveString(
   scope: LibVariables,
 ): LibPrimitive | string {
   if (!value.startsWith("$") || value.startsWith("$--")) return value;
+  if (Object.hasOwn(context.local, value.slice(1))) return value;
   const match = findVariable(value.slice(1), context, scope);
   if (!match || !isGetterCompatible(match.variable, match.getter)) return value;
   const resolved = resolveVariable(match.variable, context, match.scope);
@@ -136,6 +137,7 @@ export async function resolveLibRefs(
 ): Promise<string> {
   const doc = JSON.parse(content) as LibDoc;
   const imports = doc.imports ?? {};
+  if (Object.keys(imports).length === 0) return content;
   const importedVariables = new Map<string, LibVariables>();
 
   const dir = filePath.includes("/") ? filePath.slice(0, filePath.lastIndexOf("/") + 1) : "";
@@ -146,8 +148,6 @@ export async function resolveLibRefs(
   }
 
   const localVariables = doc.variables ?? {};
-  if (Object.keys(localVariables).length === 0 && importedVariables.size === 0) return content;
-
   const context: VariableContext = { local: localVariables, imports: importedVariables };
   const resolved = walk(doc, context, localVariables);
   return JSON.stringify(resolved);

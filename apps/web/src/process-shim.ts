@@ -1,3 +1,5 @@
-const process = { env: {} };
+export const env = {};
+
+const process = { env };
 
 export default process;

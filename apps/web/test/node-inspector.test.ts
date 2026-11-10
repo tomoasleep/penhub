@@ -69,6 +69,32 @@ describe("summarizeNode", () => {
     expect(labels).toContain("Align");
   });
 
+  it("text の line height は font size に対する % で、letter spacing は px で表示する", () => {
+    const textGraph = parsePenFile(
+      JSON.stringify({
+        version: "2.22",
+        children: [
+          {
+            id: "t",
+            name: "Label",
+            type: "text",
+            content: "abc",
+            fontFamily: "Inter",
+            fontSize: 16,
+            lineHeight: 1.5,
+            letterSpacing: 2,
+          },
+        ],
+      }),
+    );
+    const text = Array.from(textGraph.getAllNodes()).find((n) => n.type !== "CANVAS" && n.name === "Label")!;
+    const fieldsOf = summarizeNode(text).sections.find((s) => s.title === "Text")!.fields;
+    const field = (label: string) => fieldsOf.find((f) => f.label === label)?.value;
+
+    expect(field("Line Height")).toBe("150%");
+    expect(field("Letter Spacing")).toBe("2");
+  });
+
   it("layout を持たない node は Layout section を持たない", () => {
     const plain = findNode(
       (n) => n.layoutMode === "NONE" && n.type !== "CANVAS" && n.type !== "TEXT",

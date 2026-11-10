@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { parsePenFile } from "@open-pencil/pen";
-import { fontManager } from "@open-pencil/core";
 import { getCanvasKit } from "@open-pencil/core/canvaskit";
 import { SkiaRenderer } from "@open-pencil/core/canvas";
 import { fontManager } from "@open-pencil/core/text";
@@ -8,8 +6,7 @@ import { hitTest } from "@open-pencil/scene-graph/hit-test";
 import { computeContentBounds } from "@open-pencil/core/io/formats/raster";
 import type { SceneGraph, SceneNode } from "@open-pencil/scene-graph";
 import type { Surface } from "canvaskit-wasm";
-import canvaskitWasmUrl from "canvaskit-wasm/bin/canvaskit.wasm?url";
-import { resolveLibRefs } from "../lib/resolve-lib-refs";
+import { loadPenGraph } from "../lib/load-pen";
 
 const browserFetch = globalThis.fetch.bind(globalThis);
 fontManager.setWebFontFetch(browserFetch);
@@ -121,13 +118,14 @@ export function PenViewer({
     let cancelled = false;
     (async () => {
       try {
-        const resolved = await resolveLibRefs(content, filePath, sourceId, async (path) => {
+        if (!ckRef.current) ckRef.current = await getCanvasKit();
+        const graph = await loadPenGraph(content, filePath, async (path) => {
           const res = await fetch(`/api/sources/${sourceId}/files/${path}`);
           if (!res.ok) throw new Error(`Failed to load library: ${path}`);
           const body = (await res.json()) as { content?: string };
           return body.content ?? "";
         });
-        const graph = parsePenFile(resolved);
+        if (cancelled) return;
         graphRef.current = graph;
         setGraph(graph);
         const pageNodes = graph.getPages();
@@ -137,14 +135,6 @@ export function PenViewer({
         pageIdRef.current = firstPage;
         setPageId(firstPage);
         onSelectNode(null);
-
-        if (!ckRef.current) {
-          ckRef.current = await getCanvasKit({
-            locateFile: (file) => (file.endsWith(".wasm") ? canvaskitWasmUrl : file),
-          });
-        }
-        fontManager.setWebFontFetch((url, init) => fetch(url, init));
-        if (cancelled) return;
         scheduleDraw();
       } catch (e) {
         setGraph(null);

@@ -23,21 +23,30 @@ function makeFetch(files: Record<string, string>) {
 }
 
 describe("resolveLibRefs", () => {
-  it("imports が無いファイルのローカル変数参照を解決する", async () => {
+  it("ローカル変数への参照は theme ごとに解決できるよう書き換えない", async () => {
     const content = JSON.stringify({
-      version: "2.17",
+      version: "2.22",
+      imports: { lib: "./design.lib.pen" },
       variables: {
-        "getSpace(1/2)": { type: "number", value: 2 },
-        surface: { type: "color", value: "#ffffff" },
+        surface: {
+          type: "color",
+          value: [
+            { value: "#ffffff", theme: { mode: "light" } },
+            { value: "#111827", theme: { mode: "dark" } },
+          ],
+        },
       },
-      children: [
-        { id: "a", type: "frame", gap: "$getSpace(1/2)", fill: "$surface" },
-      ],
+      children: [{ id: "a", type: "frame", fill: "$surface", stroke: "$lib:primary" }],
     });
-    const result = await resolveLibRefs(content, "a.pen", "src", makeFetch({}));
+    const result = await resolveLibRefs(
+      content,
+      "src/a.pen",
+      "src",
+      makeFetch({ "src/design.lib.pen": LIB }),
+    );
     const doc = JSON.parse(result);
-    expect(doc.children[0].gap).toBe(2);
-    expect(doc.children[0].fill).toBe("#ffffff");
+    expect(doc.children[0].fill).toBe("$surface");
+    expect(doc.children[0].stroke).toBe("#3B82F6");
   });
 
   it("import したライブラリのエイリアスなし getter を解決する", async () => {

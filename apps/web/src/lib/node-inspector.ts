@@ -1,4 +1,5 @@
-import type { Color, SceneNode } from "@open-pencil/scene-graph";
+import type { SceneNode, TextLength } from "@open-pencil/scene-graph";
+import type { Color } from "@open-pencil/scene-graph/primitives";
 
 export interface InspectField {
   label: string;
@@ -33,6 +34,10 @@ export function colorToHex(color: Color): string {
 
 function num(v: number): string {
   return String(Math.round(v * 100) / 100);
+}
+
+function textLength(length: TextLength): string {
+  return length.unit === "PERCENT" ? `${num(length.value)}%` : num(length.value);
 }
 
 function fields(...pairs: [string, string | undefined | null][]): InspectField[] {
@@ -128,8 +133,11 @@ function textSection(node: SceneNode): InspectSection | null {
       ["Font", `${node.fontFamily} ${node.fontWeight}`],
       ["Size", num(node.fontSize)],
       ["Align", node.textAlignHorizontal],
-      ["Line Height", node.lineHeight !== null ? num(node.lineHeight) : undefined],
-      ["Letter Spacing", node.letterSpacing !== 0 ? num(node.letterSpacing) : undefined],
+      ["Line Height", node.lineHeight !== null ? textLength(node.lineHeight) : undefined],
+      [
+        "Letter Spacing",
+        node.letterSpacing.value !== 0 ? textLength(node.letterSpacing) : undefined,
+      ],
       ["Content", node.text !== "" ? node.text : undefined],
     ),
   };

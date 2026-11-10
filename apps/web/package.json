@@ -15,10 +15,11 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@open-pencil/core": "^0.16.0",
-    "@open-pencil/pen": "^0.16.0",
-    "@open-pencil/scene-graph": "^0.16.0",
+    "@open-pencil/core": "0.17.0-beta.2",
+    "@open-pencil/pen": "0.17.0-beta.2",
+    "@open-pencil/scene-graph": "0.17.0-beta.2",
     "canvaskit-wasm": "^0.41.1",
+    "harfbuzzjs": "1.6.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

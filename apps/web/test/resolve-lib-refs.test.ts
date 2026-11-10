@@ -23,6 +23,50 @@ function makeFetch(files: Record<string, string>) {
 }
 
 describe("resolveLibRefs", () => {
+  it("imports が無いファイルのローカル変数参照を解決する", async () => {
+    const content = JSON.stringify({
+      version: "2.17",
+      variables: {
+        "getSpace(1/2)": { type: "number", value: 2 },
+        surface: { type: "color", value: "#ffffff" },
+      },
+      children: [
+        { id: "a", type: "frame", gap: "$getSpace(1/2)", fill: "$surface" },
+      ],
+    });
+    const result = await resolveLibRefs(content, "a.pen", "src", makeFetch({}));
+    const doc = JSON.parse(result);
+    expect(doc.children[0].gap).toBe(2);
+    expect(doc.children[0].fill).toBe("#ffffff");
+  });
+
+  it("import したライブラリのエイリアスなし getter を解決する", async () => {
+    const content = JSON.stringify({
+      version: "2.17",
+      imports: { lib: "./design.lib.pen" },
+      children: [
+        { id: "a", type: "frame", gap: "$getSpace(1/2)", fill: "$surface" },
+      ],
+    });
+    const lib = JSON.stringify({
+      version: "2.17",
+      variables: {
+        "getSpace(1/2)": { type: "number", value: 2 },
+        surface: { type: "color", value: "#ffffff" },
+      },
+      children: [],
+    });
+    const result = await resolveLibRefs(
+      content,
+      "src/a.pen",
+      "src",
+      makeFetch({ "src/design.lib.pen": lib }),
+    );
+    const doc = JSON.parse(result);
+    expect(doc.children[0].gap).toBe(2);
+    expect(doc.children[0].fill).toBe("#ffffff");
+  });
+
   it("imports が無い場合は content をそのまま返す", async () => {
     const content = JSON.stringify({ version: "2.17", children: [] });
     const result = await resolveLibRefs(content, "a.pen", "src", makeFetch({}));

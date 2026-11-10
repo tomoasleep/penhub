@@ -3,12 +3,32 @@ import { parsePenFile } from "@open-pencil/pen";
 import { fontManager } from "@open-pencil/core";
 import { getCanvasKit } from "@open-pencil/core/canvaskit";
 import { SkiaRenderer } from "@open-pencil/core/canvas";
+import { fontManager } from "@open-pencil/core/text";
 import { hitTest } from "@open-pencil/scene-graph/hit-test";
 import { computeContentBounds } from "@open-pencil/core/io/formats/raster";
 import type { SceneGraph, SceneNode } from "@open-pencil/scene-graph";
 import type { Surface } from "canvaskit-wasm";
 import canvaskitWasmUrl from "canvaskit-wasm/bin/canvaskit.wasm?url";
 import { resolveLibRefs } from "../lib/resolve-lib-refs";
+
+const browserFetch = globalThis.fetch.bind(globalThis);
+fontManager.setWebFontFetch(browserFetch);
+
+const cjkFallbackFamily = "Noto Sans JP CJK";
+let cjkFontPromise: Promise<ArrayBuffer | null> | null = null;
+
+fontManager.setCJKFallbackFamily(cjkFallbackFamily);
+fontManager.setHostFontLoader(async (family) => {
+  if (family !== "Noto Sans JP" && family !== "Noto Sans Mono") return null;
+  cjkFontPromise ??= browserFetch(
+    "https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-jp@latest/japanese-400-normal.ttf",
+  ).then(async (response) => (response.ok ? response.arrayBuffer() : null));
+  const data = await cjkFontPromise;
+  if (data && !fontManager.isStyleLoaded(cjkFallbackFamily, "Regular")) {
+    fontManager.markLoaded(cjkFallbackFamily, "Regular", data);
+  }
+  return data;
+});
 
 interface Props {
   sourceId: string;

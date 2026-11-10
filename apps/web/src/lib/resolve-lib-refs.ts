@@ -1,76 +1,114 @@
 export type LibRefResolver = (path: string) => Promise<string>;
 
+type LibPrimitive = string | number | boolean;
+
 interface LibVariable {
-  type: "color" | "number" | "string";
-  value: string | number | { value: string | number; theme?: Record<string, string> }[];
+  type: "boolean" | "color" | "number" | "string";
+  value: LibPrimitive | { value: LibPrimitive; theme?: Record<string, string> }[];
 }
 
 interface LibDoc {
   version: string;
+  imports?: Record<string, string>;
   variables?: Record<string, LibVariable>;
-  children: unknown[];
+  children?: unknown[];
 }
 
-const LIB_REF_RE = /^\$([A-Za-z0-9_-]+):(get[A-Za-z0-9]*)\(("([^"]*)"|'([^']*)'|([^)]*))\)$/;
+type LibVariables = Record<string, LibVariable>;
 
-function resolveValue(variable: LibVariable | undefined, fn: string): string | number | undefined {
-  if (!variable) return undefined;
-  const raw = Array.isArray(variable.value) ? variable.value[0]?.value : variable.value;
-  if (fn === "getColor") {
-    return variable.type === "color" && typeof raw === "string" ? raw : undefined;
+interface VariableContext {
+  local: LibVariables;
+  imports: Map<string, LibVariables>;
+}
+
+interface VariableMatch {
+  variable: LibVariable;
+  scope: LibVariables;
+  getter?: string;
+}
+
+function variableNames(reference: string): string[] {
+  const getter = reference.match(/^([A-Za-z0-9_-]+)\((.*)\)$/);
+  if (!getter) return [reference];
+
+  const argument = getter[2].trim();
+  const unquoted = argument.replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, "$1$2");
+  return unquoted === argument ? [argument, reference] : [unquoted, reference];
+}
+
+function findInScope(scope: LibVariables, reference: string): VariableMatch | undefined {
+  const getter = reference.match(/^([A-Za-z0-9_-]+)\(.*\)$/)?.[1];
+  for (const name of variableNames(reference)) {
+    const variable = scope[name];
+    if (variable) return { variable, scope, getter };
   }
-  if (variable.type === "number") return typeof raw === "number" ? raw : undefined;
-  if (variable.type === "color" || variable.type === "string") {
-    return typeof raw === "string" ? raw : undefined;
+  return undefined;
+}
+
+function isGetterCompatible(variable: LibVariable, getter: string | undefined): boolean {
+  if (!getter) return true;
+  if (getter === "getColor") return variable.type === "color";
+  if (getter === "getSpace" || getter === "getFontSize") return variable.type === "number";
+  return true;
+}
+
+function findVariable(
+  reference: string,
+  context: VariableContext,
+  scope: LibVariables,
+): VariableMatch | undefined {
+  const normalized = reference.startsWith("--") ? reference.slice(2) : reference;
+  const separator = normalized.indexOf(":");
+  if (separator > 0) {
+    const variables = context.imports.get(normalized.slice(0, separator));
+    return variables ? findInScope(variables, normalized.slice(separator + 1)) : undefined;
+  }
+
+  const scopes = [scope, context.local];
+  for (const imported of context.imports.values()) scopes.push(imported);
+  const seen = new Set<LibVariables>();
+  for (const candidate of scopes) {
+    if (seen.has(candidate)) continue;
+    seen.add(candidate);
+    const match = findInScope(candidate, normalized);
+    if (match) return match;
   }
   return undefined;
 }
 
 function resolveVariable(
-  name: string,
-  variables: Record<string, LibVariable>,
-  resolving = new Set<string>(),
-): string | number | undefined {
-  if (resolving.has(name)) return undefined;
-  const variable = variables[name];
-  if (!variable) return undefined;
+  variable: LibVariable,
+  context: VariableContext,
+  scope: LibVariables,
+  resolving = new Set<LibVariable>(),
+): LibPrimitive | undefined {
+  if (resolving.has(variable)) return undefined;
   const raw = Array.isArray(variable.value) ? variable.value[0]?.value : variable.value;
   if (typeof raw !== "string" || !raw.startsWith("$")) return raw;
-  const reference = raw.slice(1);
-  if (!variables[reference]) return raw;
-  return resolveVariable(reference, variables, new Set(resolving).add(name));
+
+  const match = findVariable(raw.slice(1), context, scope);
+  if (!match || !isGetterCompatible(match.variable, match.getter)) return undefined;
+  return resolveVariable(match.variable, context, match.scope, new Set(resolving).add(variable));
 }
 
 function resolveString(
   value: string,
-  libs: Map<string, Record<string, LibVariable>>,
-): string | number {
-  const m = value.match(LIB_REF_RE);
-  if (m) {
-    const [, alias, fn, , q1, q2, expression] = m;
-    const variables = libs.get(alias);
-    if (variables) {
-      const name = q1 ?? q2 ?? expression.trim();
-      const variable = variables[name] ?? variables[`${fn}(${name})`];
-      const resolved = resolveValue(variable, fn);
-      if (resolved !== undefined) return resolved;
-    }
-  }
-
-  const direct = value.match(/^\$([A-Za-z0-9_-]+):(.+)$/);
-  if (!direct) return value;
-  const directVariables = libs.get(direct[1]);
-  if (!directVariables) return value;
-  const directValue = resolveVariable(direct[2], directVariables);
-  return directValue === undefined ? value : directValue;
+  context: VariableContext,
+  scope: LibVariables,
+): LibPrimitive | string {
+  if (!value.startsWith("$") || value.startsWith("$--")) return value;
+  const match = findVariable(value.slice(1), context, scope);
+  if (!match || !isGetterCompatible(match.variable, match.getter)) return value;
+  const resolved = resolveVariable(match.variable, context, match.scope);
+  return resolved === undefined ? value : resolved;
 }
 
-function walk(value: unknown, libs: Map<string, Record<string, LibVariable>>): unknown {
-  if (typeof value === "string") return resolveString(value, libs);
-  if (Array.isArray(value)) return value.map((v) => walk(v, libs));
+function walk(value: unknown, context: VariableContext, scope: LibVariables): unknown {
+  if (typeof value === "string") return resolveString(value, context, scope);
+  if (Array.isArray(value)) return value.map((v) => walk(v, context, scope));
   if (value !== null && typeof value === "object") {
     const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) out[k] = walk(v, libs);
+    for (const [k, v] of Object.entries(value)) out[k] = walk(v, context, scope);
     return out;
   }
   return value;
@@ -97,17 +135,20 @@ export async function resolveLibRefs(
   readFile: LibRefResolver,
 ): Promise<string> {
   const doc = JSON.parse(content) as LibDoc;
-  const imports = (doc as { imports?: Record<string, string> }).imports;
-  if (!imports || Object.keys(imports).length === 0) return content;
+  const imports = doc.imports ?? {};
+  const importedVariables = new Map<string, LibVariables>();
 
   const dir = filePath.includes("/") ? filePath.slice(0, filePath.lastIndexOf("/") + 1) : "";
-  const libs = new Map<string, Record<string, LibVariable>>();
   for (const [alias, uri] of Object.entries(imports)) {
     const libContent = await readFile(normalizePath(dir + uri));
     const libDoc = JSON.parse(libContent) as LibDoc;
-    libs.set(alias, libDoc.variables ?? {});
+    importedVariables.set(alias, libDoc.variables ?? {});
   }
 
-  const resolved = walk(doc, libs);
+  const localVariables = doc.variables ?? {};
+  if (Object.keys(localVariables).length === 0 && importedVariables.size === 0) return content;
+
+  const context: VariableContext = { local: localVariables, imports: importedVariables };
+  const resolved = walk(doc, context, localVariables);
   return JSON.stringify(resolved);
 }

@@ -19,6 +19,11 @@ export default defineConfig({
       target: "esnext",
     },
   },
+  resolve: {
+    alias: {
+      "node:process": join(import.meta.dirname, "src/process-shim.ts"),
+    },
+  },
   build: {
     target: "esnext",
   },

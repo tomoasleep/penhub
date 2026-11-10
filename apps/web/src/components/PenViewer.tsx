@@ -206,7 +206,7 @@ export function PenViewer({
     await renderer.loadFonts();
 
     const nodeIds = topNodeIds(graph, pid);
-    const restoreMeasurer = await renderer.prepareForExport(graph, pid, nodeIds);
+    await renderer.prepareForExport(graph, pid, nodeIds);
 
     if (fitRequestedRef.current) {
       fitRequestedRef.current = false;
@@ -219,7 +219,6 @@ export function PenViewer({
     const selectedIds = selectedIdRef.current ? new Set([selectedIdRef.current]) : new Set<string>();
     renderer.render(graph, selectedIds, {}, -1, "scene");
     surface.flush();
-    restoreMeasurer();
   }
 
   useEffect(() => {

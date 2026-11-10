@@ -12,7 +12,7 @@ pen.dev の `.pen` フォーマットファイルを、GitHub 的に確認・レ
 |---|---|
 | フロント | React 19 + Vite + TypeScript |
 | バック | Node + Hono + TypeScript |
-| .pen パース | `@open-pencil/pen` (`parsePenFile`) |
+| .pen パース | `@open-pencil/core/io` (`penFormat`、pen.dev format 2.22 相当) |
 | レンダリング | `@open-pencil/core` (`SkiaRenderer` + CanvasKit WASM) |
 | ヒットテスト | `@open-pencil/scene-graph` (`hitTest`) |
 | GitHub API | `octokit` |
